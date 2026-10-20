@@ -89,7 +89,7 @@ test('SDK and native metadata survive decoded HTTP bodies through actual MCP cal
     assert.deepEqual(JSON.parse(response.content[0].text),expected);
   }
   assert.equal(f.requests.length,4);
-  assert.equal(f.requests[0].url,'/blog/ghost/api/admin/members/?limit=1&page=2');
+  assert.equal(f.requests[0].url,'/blog/ghost/api/admin/members/?page=2&limit=1');
   assert.equal(f.requests[1].url,'/blog/ghost/api/admin/newsletters/one/');
   assert.deepEqual(JSON.parse(f.requests[1].body),{newsletters:[{sender_email:'new@example.invalid'}]});
   assert.equal(f.requests[2].url,'/blog/ghost/api/admin/tiers/one/');

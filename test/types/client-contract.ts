@@ -66,3 +66,20 @@ client.posts.add({title: 'A', status: 'ready'});
 client.posts.edit({id: 'x', updated_at: '2026-10-21T00:00:00Z', featured: null});
 // @ts-expect-error Tags have no content formats.
 client.tags.browse({formats: 'html'});
+client.members.browse({limit: 'all', include: 'tiers', fields: 'id,email', search: 'Ada'});
+client.users.read({email: 'name+tag@example.invalid', include: 'roles', fields: 'id,name'});
+client.users.edit({id: 'me', bio: null, include: 'roles'});
+client.newsletters.edit({id: 'one', sender_email: null, header_image: null, show_badge: false, status: 'archived'});
+client.webhooks.edit({id: 'one', secret: null});
+// @ts-expect-error Member name cannot be cleared with null.
+client.members.edit({id: 'one', name: null});
+// @ts-expect-error Newsletter status is a supported enum, not arbitrary text.
+client.newsletters.edit({id: 'one', status: 'inactive'});
+// @ts-expect-error Font choices are explicit.
+client.newsletters.add({name: 'A', title_font_category: 'comic'});
+// @ts-expect-error Member reads do not support fields.
+client.members.read({id: 'one', fields: 'id'});
+// @ts-expect-error Admin tier endpoints do not support include.
+client.tiers.read({id: 'one', include: 'benefits'});
+// @ts-expect-error Offer cadence is month/year only.
+client.offers.add({name: 'A', code: 'a', cadence: 'week', duration: 'once', amount: 10, tier_id: 'one', type: 'percent'});

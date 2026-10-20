@@ -46,7 +46,8 @@ test('stdio initializes and discovers all tools without any Ghost HTTP calls', {
       if (tool.name === 'tags_read') assert.ok(tool.inputSchema.properties.include);
       if (tool.name === 'members_browse') {
         assert.equal(tool.inputSchema.properties.formats, undefined);
-        assert.equal(tool.inputSchema.properties.limit.type, 'number');
+        assert.ok(tool.inputSchema.properties.limit.anyOf);
+        assert.ok(tool.inputSchema.properties.search);
       }
     }
     cursor = page.nextCursor;

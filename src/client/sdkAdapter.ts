@@ -4,6 +4,7 @@ import {createNativeCopy} from './nativeCopy';
 import {createCommerceClients} from './commerceClient';
 import {createStaffClients} from './staffClient';
 import {prepareContentRequest} from './contentRequest';
+import {prepareAccountRequest} from './accountRequest';
 import {normalizeCollection, normalizeEntity} from './responses';
 import {createSdkRequestExecutor} from './sdkRequest';
 import type {CollectionResponse, EntityResponse, GhostClient, GhostConfig, OperationResult, QueryOptions, RequestExecutor} from './types';
@@ -45,6 +46,10 @@ export function createGhostClient(config: GhostConfig, options: {makeRequest?: R
             let sdkQuery = query;
             if (resource === 'posts' || resource === 'pages' || resource === 'tags') {
                 const prepared = prepareContentRequest(resource, operation, input, query);
+                sdkInput = prepared.input;
+                sdkQuery = prepared.query;
+            } else if (resource === 'members' || resource === 'users' || resource === 'newsletters' || resource === 'webhooks') {
+                const prepared = prepareAccountRequest(resource, operation, input, query);
                 sdkInput = prepared.input;
                 sdkQuery = prepared.query;
             }
