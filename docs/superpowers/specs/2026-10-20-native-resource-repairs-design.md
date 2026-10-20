@@ -242,5 +242,5 @@ release/adoption approval.
 - [x] Approve twelve native operations, removal of three stubs, and README migration note.
 - [x] Write specification; self-review scope, contracts, safety, and source/doc differences.
 - [x] User reviews this written specification.
-- [ ] Write implementation plan after specification approval.
-- [ ] User reviews plan before native execution and independent final review.
+- [x] Write implementation plan after specification approval.
+- [x] User reviews plan before native execution and independent final review.
