@@ -2,7 +2,7 @@
 
 Date: 2026-10-20
 Issue: https://github.com/Furious-Green/ghost-admin-mcp/issues/3
-Status: Design direction approved; written specification awaiting user review.
+Status: Written specification approved by the user on 2026-10-20.
 
 ## Intent
 
@@ -241,6 +241,6 @@ release/adoption approval.
 - [x] Inspect current handlers, merged foundation, issue, docs, and pinned source.
 - [x] Approve twelve native operations, removal of three stubs, and README migration note.
 - [x] Write specification; self-review scope, contracts, safety, and source/doc differences.
-- [ ] User reviews this written specification.
+- [x] User reviews this written specification.
 - [ ] Write implementation plan after specification approval.
 - [ ] User reviews plan before native execution and independent final review.
