@@ -6,6 +6,8 @@ const {makeRecordingClient} = require('./helpers/recordingClient.cjs');
 const {config, families, backedFamilies, entity, pagination, timestamp, permissionError} = require('./helpers/fixtures.cjs');
 
 for (const [family, operations] of Object.entries(families)) {
+  // Native commerce contracts are tested separately, not as SDK capabilities.
+  if (['tiers', 'offers'].includes(family)) continue;
   for (const [operation, args] of Object.entries(operations)) {
     test(`adapter ${family}.${operation}: ${backedFamilies.includes(family) ? 'maps real SDK request' : 'rejects unsupported capability without HTTP'}`, async () => {
       const recording = makeRecordingClient();

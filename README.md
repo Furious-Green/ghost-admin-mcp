@@ -19,9 +19,9 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 
 ## Current limitations
 
-49 tools are registered, including all 42 original tool names, but registration is not proof of live API support:
+47 tools are registered; registration is not proof of live API support:
 
-- The 15 tiers/offers/invites/roles tools return explicit unsupported SDK capability errors; real adapters are tracked in [#3](https://github.com/Furious-Green/ghost-admin-mcp/issues/3).
+- Tiers/offers use native adapters; the five invites/roles tools still return unsupported SDK capability errors pending the staff portion of [#3](https://github.com/Furious-Green/ghost-admin-mcp/issues/3).
 - Browse output, including pages, currently drops pagination metadata, although page/limit inputs work ([#5](https://github.com/Furious-Green/ghost-admin-mcp/issues/5)).
 - Query/field coverage and explicit newsletter delivery options are incomplete ([#6](https://github.com/Furious-Green/ghost-admin-mcp/issues/6), [#7](https://github.com/Furious-Green/ghost-admin-mcp/issues/7)). Newsletter configuration tools do not provide an explicit send workflow.
 - All seven MCP resource handlers return placeholder text, and the summarize-post prompt retains a limited HTML preview ([#11](https://github.com/Furious-Green/ghost-admin-mcp/issues/11)).
@@ -48,6 +48,23 @@ Build a reviewed checkout of this fork with `npm ci` on Node 22. Configure your 
 }
 ```
 
+## Migrating from the original implementation
+
+The original package advertised tiers/offers operations absent from its Ghost SDK, so they failed before HTTP. This fork implements the eight supported commerce operations using native requests.
+
+| Removed tool | Explicit replacement |
+| --- | --- |
+| `tiers_delete` | `tiers_edit` with `{"id":"TIER_ID","active":false}` |
+| `offers_delete` | `offers_edit` with `{"id":"OFFER_ID","status":"archived"}` |
+
+Archival is **not deletion**. Refresh MCP tool discovery after upgrading; removed names produce unknown-tool errors, with no aliases or silent archival. Tier archival is documented; active-only partial edits are verified against Ghost 5.130.0 source. Offer status (`active`/`archived`) is [source-verified in Ghost 5.130.0](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/server/services/offers/application/OffersAPI.js), but omitted from the public offer-update documentation. These contracts are not live-version guarantees.
+
+Tier-slug and offer-code read selectors are rejected, including when also supplying an ID. Browse/filter first, then pass the returned ID. `offers_browse` supports only `filter`, not legacy `page`/`limit`/`order`. Tier browse supports `filter`, `limit` (positive integer or `"all"`), `page`, `order`, `fields`, and `include`; read supports ID and include. Include values are comma-separated `monthly_price`, `yearly_price`, `benefits`. Pagination boundaries remain server-dependent: the reference tiers service synthesizes pagination metadata.
+
+`offers_add` retains the `tier_id` tool input, translated to native `tier:{id}`; `tier_id` is never sent to Ghost. Fixed offers require currency, repeating offers require positive integer `duration_in_months`; Ghost remains authoritative for discount/currency rules. Tier prices are nonnegative integer minor-unit amounts. Offer edits allow only name/code/display fields and status, not discount/tier/cadence/duration changes. Unsupported fields are rejected rather than discarded.
+
+Other SDK CRUD, pages/copy, executable and environment variable names, badges and MIT licensing are unchanged. Native requests refuse redirects, time out after 30 seconds and never retry; check Ghost before manually repeating a timed-out mutation.
+
 ## Available Resources
 
 The following entity families have registered tool names (see the limitations above; the separately registered MCP resources are placeholders):
@@ -66,7 +83,7 @@ The following entity families have registered tool names (see the limitations ab
 
 ## Available Tools
 
-Below is an inventory of registered tool names, not a full API coverage guarantee. Tiers, offers, invites, and roles are currently unsupported by the SDK adapter. Permissions and Ghost version may restrict other operations too.
+Below is an inventory of registered tool names, not a full API coverage guarantee. Invites/roles remain unsupported until their native adapters land. Permissions and Ghost version may restrict other operations too.
 
 ### Posts
 - **Browse Posts**: List posts with optional filters, pagination, and ordering.
@@ -130,8 +147,7 @@ Requests use native POST `/posts/{id}/copy/` and `/pages/{id}/copy/` with no bod
 - **Browse Offers**: List offers.
 - **Read Offer**: Retrieve an offer by ID.
 - **Add Offer**: Create a new offer.
-- **Edit Offer**: Update offer details.
-- **Delete Offer**: Remove an offer.
+- **Edit Offer**: Update presentation fields or explicitly archive with `status: "archived"`.
 
 ### Invites
 - **Browse Invites**: List invites.
@@ -153,8 +169,7 @@ Requests use native POST `/posts/{id}/copy/` and `/pages/{id}/copy/` with no bod
 - **Browse Tiers**: List tiers.
 - **Read Tier**: Retrieve a tier by ID.
 - **Add Tier**: Create a new tier.
-- **Edit Tier**: Update tier details.
-- **Delete Tier**: Remove a tier.
+- **Edit Tier**: Update tier details or explicitly archive with `active: false`.
 
 ### Users
 - **Browse Users**: List users.

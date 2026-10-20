@@ -15,8 +15,8 @@ exports.families = {
   tags: {browse: {}, read: {id: 'abc123'}, add: {name: 'Example'}, edit: {id: 'abc123', name: 'Changed'}, delete: {id: 'abc123'}},
   newsletters: {browse: {}, read: {id: 'abc123'}, add: {name: 'Example'}, edit: {id: 'abc123', name: 'Changed'}, delete: {id: 'abc123'}},
   webhooks: {add: {event: 'post.added', target_url: 'https://receiver.invalid/hook'}, edit: {id: 'abc123', name: 'Changed'}, delete: {id: 'abc123'}},
-  tiers: {browse: {}, read: {id: 'abc123'}, add: {name: 'Example'}, edit: {id: 'abc123', name: 'Changed'}, delete: {id: 'abc123'}},
-  offers: {browse: {}, read: {id: 'abc123'}, add: {name: 'Example', code: 'example', cadence: 'month', duration: 'once', amount: 10, tier_id: 'tier1', type: 'percent'}, edit: {id: 'abc123', name: 'Changed'}, delete: {id: 'abc123'}},
+  tiers: {browse: {}, read: {id: 'abc123'}, add: {name: 'Example'}, edit: {id: 'abc123', name: 'Changed'}},
+  offers: {browse: {}, read: {id: 'abc123'}, add: {name: 'Example', code: 'example', cadence: 'month', duration: 'once', amount: 10, tier_id: 'tier1', type: 'percent'}, edit: {id: 'abc123', name: 'Changed'}},
   invites: {browse: {}, add: {role_id: 'role1', email: 'staff@example.invalid'}, delete: {id: 'abc123'}},
   roles: {browse: {}, read: {id: 'abc123'}},
 };

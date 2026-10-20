@@ -1,5 +1,6 @@
 import GhostAdminAPI from '@tryghost/admin-api';
 import {createNativeCopy} from './nativeCopy';
+import {createCommerceClients} from './commerceClient';
 import {encodePageSelector} from './pageSelector';
 import type {GhostClient, GhostConfig, GhostResult, QueryOptions, RequestExecutor} from './types';
 
@@ -56,7 +57,7 @@ export function createGhostClient(config: GhostConfig, options: {makeRequest?: R
         posts: {...crud('posts'), copy: input => copy('posts', input)},
         pages: {...crud('pages'), copy: input => copy('pages', input)},
         members: crud('members'), users: crud('users'),
-        tags: crud('tags'), tiers: crud('tiers'), offers: crud('offers'),
+        tags: crud('tags'), ...createCommerceClients(config, options.makeRequest),
         newsletters: crud('newsletters'), invites: crud('invites'),
         roles: {browse: method('roles', 'browse'), read: method('roles', 'read')},
         webhooks: {add: method('webhooks', 'add'), edit: method('webhooks', 'edit'), delete: method('webhooks', 'delete')},

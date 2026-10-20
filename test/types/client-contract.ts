@@ -22,3 +22,13 @@ client.posts.edit({id: 'x'});
 client.webhooks.browse({});
 // @ts-expect-error Resource names are closed, not an arbitrary index signature.
 client.nonexistent.read({});
+// @ts-expect-error Tiers cannot be deleted; explicitly edit active instead.
+client.tiers.delete({id: 'x'});
+// @ts-expect-error Offers cannot be deleted; explicitly edit status instead.
+client.offers.delete({id: 'x'});
+// @ts-expect-error Tier reads require ID, not slug.
+client.tiers.read({slug: 'paid'});
+// @ts-expect-error Offer reads require ID, not code.
+client.offers.read({code: 'sale'});
+client.tiers.edit({id: 'x', active: false});
+client.offers.edit({id: 'x', status: 'archived'});

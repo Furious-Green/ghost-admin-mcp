@@ -39,6 +39,23 @@ test('shared native core serializes JSON PUT and bodyless DELETE over actual HTT
   assert.equal(f.requests[1].method, 'DELETE');
 });
 
+test('commerce HTTP serializes nested tier, confines Unicode edit IDs and never retries mutation failures', async t => {
+  const f = await fixture(t, (req, res) => {
+    if (req.method === 'POST') res.setHeader('Content-Type', 'application/json').end('{"offers":[{"id":"sale"}]}');
+    else res.writeHead(409, {'Content-Type': 'application/json'}).end(JSON.stringify({errors: [{type: 'ConflictError', message: config.key}]}));
+  });
+  const c = client(f.url + '/blog');
+  assert.deepEqual(await c.offers.add({name: 'Sale', code: 'sale', cadence: 'month', duration: 'once', amount: 10, tier_id: 'tier1', type: 'percent'}), {id: 'sale'});
+  assert.deepEqual(JSON.parse(f.requests[0].body).offers[0].tier, {id: 'tier1'});
+  assert.equal(JSON.parse(f.requests[0].body).offers[0].tier_id, undefined);
+  await assert.rejects(c.tiers.edit({id: 'café space', active: false}), {message: 'Ghost tiers edit failed (HTTP 409).'});
+  assert.equal(f.requests[1].url, '/blog/ghost/api/admin/tiers/caf%C3%A9%20space/');
+  assert.equal(f.requests[1].body, '{"tiers":[{"active":false}]}');
+  assert.equal(f.requests.length, 2);
+  await assert.rejects(c.tiers.edit({id: '../posts/x', active: false}), /Invalid Ghost/);
+  assert.equal(f.requests.length, 2);
+});
+
 test('default HTTP copy sends authenticated POST with no body and preserves query/subdirectory', {timeout: 10000}, async t => {
   const f = await fixture(t, (_req, res) => res.setHeader('Content-Type', 'application/json').end(JSON.stringify({pages: [{id: 'copy1'}]})));
   assert.deepEqual(await client(f.url + '/blog').pages.copy({id: 'abc123', formats: 'html,lexical'}), {id: 'copy1'});
