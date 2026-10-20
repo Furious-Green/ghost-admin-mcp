@@ -3,7 +3,7 @@
 Date: 2026-10-20
 Issue: https://github.com/Furious-Green/ghost-admin-mcp/issues/5
 Base: merged issue #3, origin/main a6e27559af52b48366081ad01ad69f7cf63b18e7
-Status: Conversational design approved; written specification awaiting user review.
+Status: Written specification approved by the user on 2026-10-21.
 
 ## Intent and scope
 
@@ -240,5 +240,5 @@ remain release/adoption blockers; hosted CI requires an authorized push.
 - [x] Compare uniform/resource-keyed/browse-only approaches; user chooses uniform.
 - [x] Approve conversational architecture, semantics, migration and verification.
 - [x] Write specification and self-review contracts, scope and ambiguity.
-- [ ] User reviews this written specification.
+- [x] User reviews this written specification.
 - [ ] Write/review implementation plan and confirm execution method.
