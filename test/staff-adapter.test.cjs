@@ -11,7 +11,7 @@ const cases = [
 for (const [family, op, args, method, path, body] of cases) test(`${family}.${op} uses native staff contracts without fabricated SDK routes`, async () => {
   const r = makeRecordingClient();
   r.enqueueResponse(op === 'delete' ? '' : {[family]: [{id: 'one', custom: true}]});
-  assert.deepEqual(await r.client[family][op](args), op === 'delete' ? undefined : op === 'browse' ? [{id: 'one', custom: true}] : {id: 'one', custom: true});
+  assert.deepEqual(await r.client[family][op](args), op === 'delete' ? undefined : {data: op === 'browse' ? [{id: 'one', custom: true}] : {id: 'one', custom: true}});
   assert.equal(r.requests.length, 1);
   const request = r.requests[0];
   assert.equal(request.url, `http://127.0.0.1:1/ghost/api/admin/${path}`);
@@ -40,7 +40,7 @@ for (const family of ['invites', 'roles']) test(`${family} browse keeps array sh
   const r = makeRecordingClient();
   for (const items of [[], [{id: 'one'}], [{id: 'one'}, {id: 'two'}]]) {
     r.enqueueResponse({[family]: items});
-    assert.deepEqual(await r.client[family].browse({}), items);
+    assert.deepEqual(await r.client[family].browse({}), {data: items});
   }
   r.enqueueResponse({[family]: [], meta: {pagination: {total: 0}}});
   assert.equal((await r.client[family].browse({})).meta.pagination.total, 0);

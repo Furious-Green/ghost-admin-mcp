@@ -20,7 +20,7 @@ for (const resource of ['posts', 'pages']) {
     const {copy, requests} = recording({}, {[resource]: [{id: 'copy1', custom: {retained: true}}]});
     const start = Math.floor(Date.now() / 1000);
     for (const input of [{id: 'abc123', formats: 'html,lexical'}, {id: 'abc123'}]) {
-      assert.deepEqual(await copy(resource, input), {id: 'copy1', custom: {retained: true}});
+      assert.deepEqual(await copy(resource, input), {data: {id: 'copy1', custom: {retained: true}}});
     }
     assert.equal(requests.length, 2);
     for (const [index, request] of requests.entries()) {

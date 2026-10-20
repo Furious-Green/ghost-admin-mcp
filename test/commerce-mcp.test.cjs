@@ -20,7 +20,7 @@ test('commerce discovery removes delete tools and every supported operation disp
     const args = op === 'browse' ? {} : op === 'read' ? {id: 'one'} : op === 'edit' ? family === 'tiers' ? {id: 'one', active: false} : {id: 'one', status: 'archived'} : family === 'tiers' ? {name: 'Paid'} : {name: 'Sale', code: 'sale', cadence: 'month', duration: 'once', amount: 10, tier_id: 'tier1', type: 'percent'};
     r.enqueueResponse({[family]: [{id: 'one'}]});
     const response = await r.mcpClient.callTool({name: `${family}_${op}`, arguments: args});
-    assert.deepEqual(JSON.parse(response.content[0].text), op === 'browse' ? [{id: 'one'}] : {id: 'one'});
+    assert.deepEqual(JSON.parse(response.content[0].text), {data: op === 'browse' ? [{id: 'one'}] : {id: 'one'}});
   }
   assert.equal(r.requests.length, 8);
 });

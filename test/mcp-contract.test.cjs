@@ -59,7 +59,7 @@ for (const [family, operations] of Object.entries(families)) {
         const singular = {posts: 'Post', members: 'Member', users: 'User', tags: 'Tag', newsletters: 'Newsletter', webhooks: 'Webhook'}[family];
         assert.equal(output.content[0].text, `${singular} with id abc123 deleted.`);
       } else {
-        assert.deepEqual(JSON.parse(output.content[0].text), entity);
+        assert.deepEqual(JSON.parse(output.content[0].text), {data: operation === 'browse' ? [entity] : entity});
       }
     });
   }
@@ -105,15 +105,14 @@ test('MCP content writes preserve HTML/Lexical, relationships, metadata and conc
   assert.deepEqual(requests[2].data, {posts: [{updated_at: timestamp, html: '<p>Changed</p>'}]});
 });
 
-test('known issue #5: browse text drops array metadata for nonempty and empty pages', async t => {
+test('browse text preserves server metadata for nonempty and empty final pages', async t => {
   const {mcpClient, enqueueResponse} = await harness(t);
   enqueueResponse({members: [entity], meta: {pagination}});
   const page = await mcpClient.callTool({name: 'members_browse', arguments: {page: 1}});
-  assert.deepEqual(JSON.parse(page.content[0].text), [entity]);
-  assert.ok(!page.content[0].text.includes('pagination'));
+  assert.deepEqual(JSON.parse(page.content[0].text), {data: [entity], meta: {pagination}});
   enqueueResponse({members: [], meta: {pagination: {...pagination, page: 2, next: null}}});
   const empty = await mcpClient.callTool({name: 'members_browse', arguments: {page: 2}});
-  assert.deepEqual(JSON.parse(empty.content[0].text), []);
+  assert.deepEqual(JSON.parse(empty.content[0].text), {data: [], meta: {pagination: {...pagination, page: 2, next: null}}});
 });
 
 test('known issue #11: all resource handlers return placeholders without Ghost reads', async t => {

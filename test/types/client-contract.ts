@@ -1,4 +1,5 @@
 import type {GhostClient} from '../../src/client/types';
+import type {CollectionResponse, EntityResponse} from '../../src/client/responses';
 
 declare const client: GhostClient;
 client.posts.copy({id: 'x'});
@@ -41,3 +42,15 @@ client.offers.browse({page: 1});
 client.roles.browse({permissions: 'assign'});
 // @ts-expect-error Invites do not expose a read tool.
 client.invites.read({id: 'x'});
+const collection: Promise<CollectionResponse> = client.posts.browse({});
+const entity: Promise<EntityResponse> = client.posts.read({id: 'x'});
+const added: Promise<EntityResponse> = client.offers.add({name: 'x', code: 'x', cadence: 'month', duration: 'once', amount: 10, tier_id: 'x', type: 'percent'});
+const edited: Promise<EntityResponse> = client.tiers.edit({id: 'x', active: false});
+const copied: Promise<EntityResponse> = client.pages.copy({id: 'x'});
+const deleted: Promise<undefined> = client.invites.delete({id: 'x'});
+// @ts-expect-error Browse responses are explicit envelopes, not bare arrays.
+const bare: Promise<unknown[]> = client.posts.browse({});
+// @ts-expect-error Entity responses are not collection responses.
+const wrongCollection: Promise<CollectionResponse> = client.posts.read({id: 'x'});
+// @ts-expect-error Delete cannot pretend to return entity data.
+const wrongDelete: Promise<EntityResponse> = client.posts.delete({id: 'x'});

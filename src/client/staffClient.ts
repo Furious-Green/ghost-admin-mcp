@@ -1,11 +1,14 @@
 import {inviteSchemas, roleSchemas} from '../schemas/staff';
 import {createNativeAdminRequest} from './nativeAdmin';
 import {readNativeCollection, readNativeEntity} from './nativeResponses';
-import type {GhostClient, GhostConfig, QueryOptions, RequestExecutor} from './types';
+import type {CollectionResponse, EntityResponse, GhostClient, GhostConfig, GhostResult, QueryOptions, RequestExecutor} from './types';
 
 export function createStaffClients(config: GhostConfig, makeRequest?: RequestExecutor): Pick<GhostClient, 'invites' | 'roles'> {
     const send = createNativeAdminRequest(config, makeRequest);
-    async function request(operation: 'invites.browse' | 'invites.add' | 'invites.delete' | 'roles.browse', input: unknown, options?: QueryOptions) {
+    function request(operation: 'invites.browse' | 'roles.browse', input: unknown, options?: QueryOptions): Promise<CollectionResponse>;
+    function request(operation: 'invites.add', input: unknown, options?: QueryOptions): Promise<EntityResponse>;
+    function request(operation: 'invites.delete', input: unknown, options?: QueryOptions): Promise<undefined>;
+    async function request(operation: 'invites.browse' | 'invites.add' | 'invites.delete' | 'roles.browse', input: unknown, options?: QueryOptions): Promise<GhostResult> {
         const [family, op] = operation.split('.');
         const schema = operation === 'roles.browse' ? roleSchemas.browse
             : inviteSchemas[op as keyof typeof inviteSchemas];

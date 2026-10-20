@@ -11,7 +11,7 @@ export function registerPrompts(server: McpServer, ghostApiClient: GhostClient) 
     async ({ postId }) => {
       // Fetch the post by ID
       const post = await ghostApiClient.posts.read({ id: postId });
-      const record = post && !Array.isArray(post) ? post : {};
+      const record = post.data;
       const title = typeof record.title === "string" ? record.title : "";
       const excerpt = typeof record.excerpt === "string" ? record.excerpt : "";
       const html = typeof record.html === "string" ? record.html : "";
