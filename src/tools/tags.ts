@@ -19,7 +19,7 @@ export function registerTagTools(server: McpServer, client: GhostClient): void {
   }));
   registerStrictTool(server, 'tags_read', 'Read exactly one tag by id or slug.', readParams, async args => {
     const {id, slug, ...query} = args;
-    const tag = await client.tags.read({...id !== undefined ? {id} : {}, ...slug !== undefined ? {slug} : {}}, query);
+    const tag = await client.tags.read({...(id !== undefined ? {id} : {}), ...(slug !== undefined ? {slug} : {})}, query);
     return {content: [{type: 'text', text: JSON.stringify(tag, null, 2)}]};
   });
   registerStrictTool(server, 'tags_add', 'Add a tag with SEO, social and display fields.', addParams, async args => {

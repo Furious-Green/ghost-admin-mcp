@@ -19,6 +19,7 @@ test('content preparation rejects unknown and wrong-operation inputs', () => {
   assert.throws(() => prepare('tags','browse',{formats:'html'}));
   assert.throws(() => prepare('pages','add',{title:'A',email_only:true}));
   assert.throws(() => prepare('tags','add',{name:'A'},{source:'html'}));
+  assert.throws(() => prepare('posts','browse',{},null));
   for (const input of [{tags:['a'.repeat(192)]}, {authors:[{id:'a'.repeat(25)}]}, {tiers:[{name:'a'.repeat(192)}]}]) assert.throws(() => prepare('posts','add',{title:'A',...input}));
 });
 

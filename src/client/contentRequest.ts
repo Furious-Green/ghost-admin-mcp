@@ -12,7 +12,7 @@ const queryShapes = {posts: postQueryShapes, pages: pageQueryShapes, tags: tagQu
 export function prepareContentRequest(resource: Resource, operation: Operation, input: unknown, options?: QueryOptions): {input: Record<string, unknown>; query: QueryOptions} {
     const write = operation === 'add' || operation === 'edit';
     const queryShape: z.ZodRawShape = queryShapes[resource][operation];
-    const parsedOptions: Record<string, unknown> = z.object({...queryShape, ...(write && resource !== 'tags' ? {source: z.literal('html').optional()} : {})}).strict().parse(options ?? {});
+    const parsedOptions: Record<string, unknown> = z.object({...queryShape, ...(write && resource !== 'tags' ? {source: z.literal('html').optional()} : {})}).strict().parse(options === undefined ? {} : options);
     const {source, ...externalOptions} = parsedOptions;
     const parsed = z.object(shapes[resource][operation]).strict().parse(input) as Record<string, unknown>;
     for (const key of Object.keys(externalOptions)) {

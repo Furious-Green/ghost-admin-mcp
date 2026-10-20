@@ -28,6 +28,47 @@ function client(url, executor) {
   return require('../build/client/sdkAdapter.js').createGhostClient({...config, url}, executor ? {makeRequest: executor} : {});
 }
 
+test('strict content MCP uses one encoded selector and forwards revision options apart from nullable bodies over HTTP', async t => {
+  const f = await fixture(t, (req,res) => {
+    const resource=req.url.split('/')[5];
+    res.setHeader('Content-Type','application/json').end(JSON.stringify({[resource]:[{id:'one'}],meta:{retained:true}}));
+  });
+  const m=await require('./helpers/mcpHarness.cjs').openMcpHarness(client(f.url+'/blog'));
+  t.after(m.close);
+  for(const [name,args]of [
+    ['posts_read',{slug:'café space',formats:'html,plaintext'}],
+    ['pages_read',{id:'über uns',include:'tags'}],
+    ['posts_edit',{id:'café space',updated_at:'2026-10-21T01:00:00+01:00',custom_template:null,save_revision:false,formats:'lexical'}],
+    ['pages_edit',{id:'one',updated_at:'2026-10-21T00:00:00Z',feature_image:null,save_revision:true}],
+    ['tags_read',{slug:'café space',include:'count.posts',fields:'id,name',filter:'visibility:internal'}],
+    ['pages_copy',{id:'one',formats:'plaintext,mobiledoc'}],
+  ]) {
+    const response=await m.mcpClient.callTool({name,arguments:args});
+    assert.notEqual(response.isError,true);
+    assert.deepEqual(JSON.parse(response.content[0].text),{data:{id:'one'},meta:{retained:true}});
+  }
+  assert.deepEqual(f.requests.map(r=>r.url),[
+    '/blog/ghost/api/admin/posts/slug/caf%C3%A9%20space/?formats=html%2Cplaintext',
+    '/blog/ghost/api/admin/pages/%C3%BCber%20uns/?include=tags',
+    '/blog/ghost/api/admin/posts/caf%C3%A9%20space/?formats=lexical&save_revision=false',
+    '/blog/ghost/api/admin/pages/one/?save_revision=true',
+    '/blog/ghost/api/admin/tags/slug/caf%C3%A9%20space/?fields=id%2Cname&filter=visibility%3Ainternal&include=count.posts',
+    '/blog/ghost/api/admin/pages/one/copy/?formats=plaintext,mobiledoc',
+  ]);
+  assert.deepEqual(JSON.parse(f.requests[2].body),{posts:[{updated_at:'2026-10-21T01:00:00+01:00',custom_template:null}]});
+  assert.deepEqual(JSON.parse(f.requests[3].body),{pages:[{updated_at:'2026-10-21T00:00:00Z',feature_image:null}]});
+  assert.equal(f.requests[5].body,'');
+  assert.deepEqual(f.requests.map(r=>r.method),['GET','GET','PUT','PUT','GET','POST']);
+  for(const r of f.requests) {
+    assert.match(r.headers.authorization,/^Ghost /);
+    assert.equal(r.headers['accept-version'],'v5.0');
+  }
+  await assert.rejects(m.mcpClient.callTool({name:'posts_edit',arguments:{id:'one',updated_at:'2026-10-21T00:00:00Z',save_revison:true}}),/Invalid arguments/);
+  const ambiguous=await m.mcpClient.callTool({name:'tags_read',arguments:{id:'one',slug:'two'}});
+  assert.equal(ambiguous.isError,true);
+  assert.equal(f.requests.length,6);
+});
+
 test('SDK and native metadata survive decoded HTTP bodies through actual MCP calls', async t => {
   const f = await fixture(t, (req, res) => {
     const resource = req.url.split('/')[5];

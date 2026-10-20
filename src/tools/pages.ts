@@ -19,7 +19,7 @@ export function registerPageTools(server: McpServer, client: GhostClient): void 
   }));
   registerStrictTool(server, 'pages_read', 'Read exactly one page by id or slug.', readParams, async args => {
     const {id, slug, ...query} = args;
-    const page = await client.pages.read({...id !== undefined ? {id} : {}, ...slug !== undefined ? {slug} : {}}, query);
+    const page = await client.pages.read({...(id !== undefined ? {id} : {}), ...(slug !== undefined ? {slug} : {})}, query);
     return {content: [{type: 'text', text: JSON.stringify(page, null, 2)}]};
   });
   registerStrictTool(server, 'pages_add', 'Add a page with supported writable fields.', addParams, async args => {

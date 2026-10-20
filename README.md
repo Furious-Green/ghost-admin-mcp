@@ -13,7 +13,8 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 - Ghost Admin API requests with `@tryghost/admin-api` plus focused authenticated native adapters
 - Tools for posts, pages, members, users, tags, newsletter configuration, webhooks, tiers, offers, staff invites and roles
 - Native Ghost post/page copying, creating drafts without client-side reconstruction
-- Explicit Ghost query filters and pagination inputs (pages additionally accept `limit: "all"`)
+- Explicit Ghost query filters and pagination inputs, including `limit: "all"` for posts/pages/tags, tiers and invites
+- Strict posts/pages/tags inputs with resource-specific queries, nullable clearing and revision controls
 - Consistent JSON `data`/optional `meta` envelopes, preserving server pagination and mutation metadata
 - MCP error signaling and unchanged plain-text delete confirmations
 - Offline request/registration contract tests, without Ghost credentials or live mutations
@@ -24,7 +25,7 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 
 - Tiers/offers/invites/roles use native adapters for twelve supported operations. Contracts are verified against documentation and Ghost 5.130.0 source, not a live server; permissions and version differences still apply.
 - Pagination is returned when Ghost supplies it; this server never invents pagination or automatically fetches additional pages. Available paging controls remain resource-specific.
-- Query/field coverage and explicit newsletter delivery options are incomplete ([#6](https://github.com/Furious-Green/ghost-admin-mcp/issues/6), [#7](https://github.com/Furious-Green/ghost-admin-mcp/issues/7)). Newsletter configuration tools do not provide an explicit send workflow.
+- Posts/pages/tags have repaired query/write schemas and strict validation (see migration below). Remaining-resource query/validation work is still [#6](https://github.com/Furious-Green/ghost-admin-mcp/issues/6); explicit newsletter delivery/opt-in controls remain [#7](https://github.com/Furious-Green/ghost-admin-mcp/issues/7). Newsletter configuration tools do not provide an explicit send workflow.
 - All seven MCP resource handlers return placeholder text, and the summarize-post prompt retains a limited HTML preview ([#11](https://github.com/Furious-Green/ghost-admin-mcp/issues/11)).
 - Available SDK methods do not prove that a Ghost version or credential permits an operation. Custom Integration keys have fixed restricted permissions; staff tokens act with the user's role. Never assume every key grants unrestricted admin access.
 
@@ -69,11 +70,11 @@ Tier-slug and offer-code read selectors are rejected, including when also supply
 
 **Staff permissions:** invites and roles are staff-management endpoints. Supply a staff access token with sufficient role permissions through the existing `GHOST_ADMIN_API_KEY` setting (same `id:secret` format), not a Custom Integration's fixed restricted permission set. Ghost enforces permissions; the client never infers credential class, auto-escalates or retries with another auth method. `invites_add` accepts `role_id` and a valid email address and **sends a real staff invitation email** when run against Ghost. Browse roles first to choose an assignable role. Delete removes an invitation, not an existing staff account.
 
-Request semantics for other SDK CRUD and pages/copy, executable and environment variable names, badges and MIT licensing are unchanged. **All data-returning tools now use the [response envelope below](#response-format-migration)**, including reads and copies. Native requests refuse redirects, time out after 30 seconds and never retry; check Ghost before manually repeating a timed-out mutation. SDK transport policy is unchanged; these native safeguards are not a claim that the SDK transport has the same policy.
+Executable and environment variable names, badges and MIT licensing are unchanged. **All data-returning tools now use the [response envelope below](#response-format-migration)**, including reads and copies; posts/pages/tags also have the [strict input migration](#strict-content-input-migration). Native requests refuse redirects, time out after 30 seconds and never retry; check Ghost before manually repeating a timed-out mutation. SDK transport policy is unchanged; these native safeguards are not a claim that the SDK transport has the same policy.
 
 ## Response format migration
 
-**Breaking output change:** browse/read/add/edit/copy return JSON text containing `{data, meta?}`. The outer MCP response is still `content: [{type: "text", text: "...JSON..."}]`, not a new protocol envelope. Tool names, inputs, executable/settings and MCP error signaling are unchanged. Delete tools keep their existing plain-text confirmations (for example, `Post with id abc123 deleted.`).
+**Breaking output change:** browse/read/add/edit/copy return JSON text containing `{data, meta?}`. The outer MCP response is still `content: [{type: "text", text: "...JSON..."}]`, not a new protocol envelope. Tool names, executable/settings and MCP error signaling are unchanged. The separate strict-input migration below changes content validation. Delete tools keep their existing plain-text confirmations (for example, `Post with id abc123 deleted.`).
 
 Previously, browse text was usually a bare array and lost pagination metadata; SDK singletons could even become bare entities when metadata was absent:
 
@@ -104,7 +105,7 @@ const pagination = result.meta?.pagination;
 
 Metadata is retained as supplied by Ghost, including unknown keys and nested values. An absent `meta` is omitted, an empty object remains `{}`, and entity fields named `data` or `meta` remain inside the entity. Malformed resource/metadata responses are errors, not successful empty results. There is no compatibility flag, alternate tool name or bare-result fallback.
 
-**Paging remains explicit:** for resources supporting numeric paging, inspect `result.meta?.pagination.next` and supply that number in a separate `page` request, retaining your filter/order/limit. `next: null` is preserved. Each browse call requests one server response; there is no automatic paging. Missing pagination does **not** prove exhaustion or imply another page exists. Offers/roles are unpaginated collections, tiers pagination remains server-dependent, and `limit: "all"` is accepted only by the existing resource-specific schemas (currently pages, tiers and invites).
+**Paging remains explicit:** for resources supporting numeric paging, inspect `result.meta?.pagination.next` and supply that number in a separate `page` request, retaining your filter/order/limit. `next: null` is preserved. Each browse call requests one server response; there is no automatic paging. Missing pagination does **not** prove exhaustion or imply another page exists. Offers/roles are unpaginated collections, tiers pagination remains server-dependent, and `limit: "all"` is accepted only by resource-specific schemas (currently posts, pages, tags, tiers and invites).
 
 **Newsletter metadata describes returned state, not requested state.** For example:
 
@@ -113,6 +114,44 @@ Metadata is retained as supplied by Ghost, including unknown keys and nested val
 ```
 
 This reports pending verification, **not** an already-active new sender address. The returned `sender_email` stays unchanged until verification. Opt-in counts are preserved when Ghost returns them, without interpreting or fabricating them; new opt-in and delivery controls remain [#7](https://github.com/Furious-Green/ghost-admin-mcp/issues/7). Private consumers must explicitly adapt to this response change before separately approved adoption.
+
+## Strict content input migration
+
+**Breaking validation change, scoped to the 17 posts/pages/tags tools:** unknown keys now fail instead of disappearing, including unknown nested relationship fields and copy overrides. Read accepts **exactly one** nonblank `id` or `slug`; supplying both no longer silently picks the ID. IDs/slugs cannot contain traversal, path/query/fragment delimiters, percent escapes or control characters; spaces and Unicode are encoded as one path segment. Refresh MCP discovery and remove undeclared inputs before upgrading. All 46 tool names, `{data, meta?}` outputs and delete confirmations remain unchanged. Other resource schemas are not made globally strict by this repair.
+
+| Tools | Query controls |
+| --- | --- |
+| Posts/pages browse | `filter`, `order`, `page`, `limit`, `include`, `fields`, `formats` |
+| Posts/pages read | `include`, `fields`, `formats` |
+| Posts/pages add | `include`, `formats` |
+| Posts/pages edit | `include`, `formats`, `save_revision` (boolean) |
+| Posts/pages copy | `formats` only, plus required ID |
+| Tags browse | `filter`, `order`, `page`, `limit`, `include`, `fields` |
+| Tags read | `include`, `fields`, `filter` |
+| Tags add/edit | `include` |
+| Posts/pages/tags delete | Required ID only |
+
+`page` and numeric `limit` must be positive safe integers, not numeric strings or fractions. These three Admin browse tools also accept `limit: "all"` (potentially a large response); this does not extend other resource schemas or change the Content API's limits. `filter` and `order` are nonblank strings interpreted by Ghost. `fields` is a nonempty comma-separated list, not an unrestricted request object; Ghost remains authoritative for field availability and field/include interactions. Empty list components are rejected.
+
+`formats` accepts comma-separated `html`, `lexical`, `plaintext`, `mobiledoc`, in any order (legacy Mobiledoc is baseline-source-verified, not a future-version guarantee). Tags have no formats. Include lists are resource-specific and unknown values fail rather than being silently removed:
+
+- **Pages:** `tags`, `authors`, `authors.roles`, `tiers`, `count.signups`, `count.paid_conversions`, `post_revisions`, `post_revisions.author`.
+- **Posts:** all page includes plus `email`, `newsletter`, `count.conversions`, `count.clicks`, `sentiment`, `count.positive_feedback`, `count.negative_feedback`.
+- **Tags:** `count.posts` only.
+
+Query controls never enter write bodies. Typed-client callers may provide them in the existing flat input or separate options argument; duplicate keys across the two are rejected, not overwritten. Nonempty HTML still infers `source=html` and takes precedence over supplied Lexical/Mobiledoc; source conversion is not a new MCP argument. Otherwise do not supply both nonempty Lexical and Mobiledoc. Both source strings must contain valid JSON; Ghost handles document semantics.
+
+Posts/pages retain image/SEO/social/injection fields and relationships, and accept `custom_template`, `locale`, `mobiledoc`, and `tiers`. Pages additionally accept `show_title_and_feature_image`; posts retain `email_only`. Post statuses: `draft`, `published`, `scheduled`, `sent`; page statuses: `draft`, `published`, `scheduled`. Both accept visibility `public`, `members`, `paid`, `tiers`. Custom NQL visibility is deliberately unsupported. Tag writes now include visibility (`public`/`internal`), feature image, SEO/social fields, code injection, canonical URL and accent color, in addition to name/slug/description. Ghost still enforces permissions and valid state transitions.
+
+**Clearing:** content accepts explicit `null` for HTML/Lexical/Mobiledoc, locale, `published_at`, custom excerpt/template, image/alt/caption, SEO/social strings, code injections and canonical URL. Tags accept `null` for optional string fields, including slug/description/images/SEO/social/injections/canonical URL/accent color. Null is forwarded unchanged as a clearing request, not proof that Ghost will leave the field null after processing. Title/name, status/visibility, booleans and relation arrays do not accept null. Clear relations with `[]` where Ghost permits it; authors may have server-side requirements. Arrays replace, not merge, relations. Strings or strict reference objects are supported: tags/tiers use `id`/`slug`/`name`; authors use `id`/`slug`/`email`. Objects need at least one nonblank identifier; multiple identifiers are retained.
+
+Edit timestamps must be valid date-times with a timezone (`Z` or offset). Read first and pass the exact `data.updated_at`; no timestamp rewriting or conflict retry occurs. For example:
+
+```json
+{"name":"posts_edit","arguments":{"id":"ID_FROM_READ","updated_at":"2026-10-21T00:00:00.000Z","custom_template":null,"meta_description":null,"save_revision":true,"include":"post_revisions","formats":"html,lexical"}}
+```
+
+API schema lengths/nullability and query options were checked against **Ghost 5.130.0**, including its pinned `@tryghost/admin-api-schema@4.5.10`, not just its database columns. `Accept-Version: v5.0` remains a minimum-version header, not a guarantee for every 5.x minor. Excluded here: generated/audit/database-only fields, experimental collections, custom `visibility_filter`, debug/internal transaction/conversion controls, post `show_title_and_feature_image`, and new email subject/delivery controls (#7). No arbitrary HTTP proxy or unknown-field escape hatch is added. Live version/permission compatibility remains unverified.
 
 ## Available Resources
 
@@ -166,7 +205,7 @@ These are MCP tool-call names and arguments, not direct HTTP request bodies:
 {"name":"pages_edit","arguments":{"id":"PAGE_ID_FROM_READ","updated_at":"TIMESTAMP_FROM_READ","lexical":"{\"root\":{\"children\":[],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}"}}
 ```
 
-`include`/`fields` are comma-separated query strings. `formats` accepts `html`, `lexical`, `html,lexical`, or `lexical,html`. Include/formats are never written into content. Nonempty HTML uses Ghost's `source=html` conversion (also taking precedence if Lexical is supplied); Lexical-only writes do not. Page tools do not expose newsletter or email-only options. Read the current page first and pass its exact `data.updated_at` into edits; conflicts are not retried.
+`include`/`fields` are comma-separated query strings; see the strict content input table for allowed includes and formats. Include/formats/revision controls are never written into content. Nonempty HTML uses Ghost's `source=html` conversion (also taking precedence if Lexical is supplied); Lexical-only writes do not. Page tools do not expose newsletter or email-only options. Read the current page first and pass its exact `data.updated_at` into edits; conflicts are not retried.
 
 #### Native copy behavior
 

@@ -19,7 +19,7 @@ export function registerPostTools(server: McpServer, client: GhostClient): void 
   }));
   registerStrictTool(server, 'posts_read', 'Read exactly one post by id or slug.', readParams, async args => {
     const {id, slug, ...query} = args;
-    const post = await client.posts.read({...id !== undefined ? {id} : {}, ...slug !== undefined ? {slug} : {}}, query);
+    const post = await client.posts.read({...(id !== undefined ? {id} : {}), ...(slug !== undefined ? {slug} : {})}, query);
     return {content: [{type: 'text', text: JSON.stringify(post, null, 2)}]};
   });
   registerStrictTool(server, 'posts_add', 'Add a post with supported writable fields.', addParams, async args => {

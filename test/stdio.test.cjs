@@ -33,6 +33,22 @@ test('stdio initializes and discovers all tools without any Ghost HTTP calls', {
   do {
     const page = await cli.request('tools/list', cursor ? {cursor} : {});
     names.push(...page.tools.map(tool => tool.name));
+    for (const tool of page.tools) {
+      if (/^(posts|pages|tags)_/.test(tool.name)) {
+        assert.equal(tool.inputSchema.additionalProperties, false, tool.name);
+        assert.equal(tool.outputSchema, undefined);
+      }
+      if (tool.name === 'posts_edit') {
+        assert.equal(tool.inputSchema.properties.save_revision.type, 'boolean');
+        assert.ok(tool.inputSchema.properties.custom_template);
+        assert.equal(tool.inputSchema.properties.fields, undefined);
+      }
+      if (tool.name === 'tags_read') assert.ok(tool.inputSchema.properties.include);
+      if (tool.name === 'members_browse') {
+        assert.equal(tool.inputSchema.properties.formats, undefined);
+        assert.equal(tool.inputSchema.properties.limit.type, 'number');
+      }
+    }
     cursor = page.nextCursor;
   } while (cursor);
   assert.deepEqual(names.sort(), [...toolNames, ...additionalToolNames].sort());
