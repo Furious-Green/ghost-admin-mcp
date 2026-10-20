@@ -1,5 +1,6 @@
 import GhostAdminAPI from '@tryghost/admin-api';
 import {createNativeCopy} from './nativeCopy';
+import {encodePageSelector} from './pageSelector';
 import type {GhostClient, GhostConfig, GhostResult, QueryOptions, RequestExecutor} from './types';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -29,7 +30,15 @@ export function createGhostClient(config: GhostConfig, options: {makeRequest?: R
             if (typeof fn !== 'function') {
                 throw new Error(`Unsupported Ghost SDK capability: ${resource}.${operation}`);
             }
-            const result: unknown = await Reflect.apply(fn, target, [input, query]);
+            let sdkInput = input;
+            if (resource === 'pages' && ['read', 'edit', 'delete'].includes(operation) && isRecord(input)) {
+                sdkInput = {
+                    ...input,
+                    ...(input.id !== undefined ? {id: encodePageSelector(input.id)} : {}),
+                    ...(operation === 'read' && input.slug !== undefined ? {slug: encodePageSelector(input.slug)} : {}),
+                };
+            }
+            const result: unknown = await Reflect.apply(fn, target, [sdkInput, query]);
             // Ghost returns no entity for successful deletes (often an empty body).
             if (operation === 'delete') return undefined;
             return checkResult(result);

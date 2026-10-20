@@ -61,3 +61,22 @@ for (const [index, c] of cases.entries()) {
     assert.deepEqual(result, c.operation === 'delete' ? undefined : entity);
   });
 }
+
+test('typed page client rejects traversal independently of MCP validation', async () => {
+  const {client, requests} = makeRecordingClient();
+  for (const operation of ['read', 'edit', 'delete']) {
+    for (const id of ['../posts/victim', '%2e%2e', 'a/b', 'a\\b', 'a?x=y', 'a#frag', '.', '..', 'a\n']) {
+      await assert.rejects(client.pages[operation]({id, updated_at: timestamp}), /Invalid Ghost page selector/);
+    }
+  }
+  await assert.rejects(client.pages.read({slug: '../posts/victim'}), /Invalid Ghost page selector/);
+  assert.equal(requests.length, 0);
+});
+
+test('page selectors encode Unicode and spaces without encoding edited content slugs', async () => {
+  const {client, requests} = makeRecordingClient();
+  await client.pages.read({slug: 'über uns'});
+  assert.equal(requests[0].url, `${config.url}/ghost/api/admin/pages/slug/%C3%BCber%20uns/`);
+  await client.pages.edit({id: 'abc123', updated_at: timestamp, slug: 'über-uns'});
+  assert.deepEqual(requests[1].data, {pages: [{updated_at: timestamp, slug: 'über-uns'}]});
+});

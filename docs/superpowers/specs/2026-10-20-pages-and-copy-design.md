@@ -55,6 +55,9 @@ returns `Page with id <id> deleted.` Only report deletion after a successful cal
 - `pages_read`: exactly one nonempty id or slug, plus optional include, fields,
   and formats. Reject missing or simultaneous selectors before a request. This
   tightens only the new page tool, not existing posts_read behavior.
+  Page ID/slug selectors are validated as single segments and encoded before SDK
+  interpolation; reject traversal, percent escapes, separators, query/fragment
+  delimiters, and controls. Apply the same ID protection to page edits/deletes.
 - `pages_add`: required title and optional shared content fields, plus include
   and formats query options. Use HTML source conversion when nonempty HTML is
   supplied, matching the existing post workflow. Lexical-only writes do not set

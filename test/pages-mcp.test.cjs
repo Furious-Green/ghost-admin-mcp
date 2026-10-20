@@ -134,3 +134,14 @@ test('MCP copy ignores overrides and does not invent success on malformed respon
   assert.equal(output.content[0].text, 'Unexpected Ghost copy response');
   assert.equal(requests.length, 2);
 });
+
+test('page MCP selectors cannot escape the page resource route', async t => {
+  const {call, requests} = await setup(t);
+  for (const selector of ['../posts/victim', '%2e%2e%2fposts%2fvictim', '..', '.', 'a/b', 'a\\b', 'a?x=y', 'a#frag', 'a\n', 'a\x7f']) {
+    for (const [name, args] of [
+      ['pages_read', {id: selector}], ['pages_read', {slug: selector}],
+      ['pages_edit', {id: selector, updated_at: timestamp}], ['pages_delete', {id: selector}],
+    ]) await assert.rejects(call(name, args), /Invalid arguments/);
+  }
+  assert.equal(requests.length, 0);
+});

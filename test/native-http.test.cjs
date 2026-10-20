@@ -83,3 +83,24 @@ test('loopback guard refuses nonfixture destinations before HTTP', () => {
   assert.throws(() => http.get('http://127.0.0.1:1/'), /Unexpected destination/);
   assert.throws(() => fetch('http://example.invalid/'), /Unexpected fetch/);
 });
+
+test('SDK-backed page tools confine actual HTTP routes and reject traversal before transport', {timeout: 10000}, async t => {
+  const f = await fixture(t, (req, res) => {
+    if (req.method === 'DELETE') res.writeHead(204).end();
+    else res.setHeader('Content-Type', 'application/json').end(JSON.stringify({pages: [{id: 'abc123'}]}));
+  });
+  const {openMcpHarness} = require('./helpers/mcpHarness.cjs');
+  const mcp = await openMcpHarness(client(f.url));
+  t.after(mcp.close);
+  for (const [name, args] of [
+    ['pages_delete', {id: '../posts/victim'}], ['pages_edit', {id: '../posts/victim', updated_at: '2026-10-20T00:00:00.000Z'}],
+    ['pages_read', {slug: '%2e%2e/posts/victim'}],
+  ]) await assert.rejects(mcp.mcpClient.callTool({name, arguments: args}), /Invalid arguments/);
+  assert.equal(f.requests.length, 0);
+  await mcp.mcpClient.callTool({name: 'pages_read', arguments: {slug: 'über uns'}});
+  await mcp.mcpClient.callTool({name: 'pages_delete', arguments: {id: 'abc123'}});
+  assert.equal(f.requests.length, 2);
+  assert.equal(f.requests[0].url, '/ghost/api/admin/pages/slug/%C3%BCber%20uns/');
+  assert.equal(f.requests[1].url, '/ghost/api/admin/pages/abc123/');
+  assert.equal(f.requests[1].method, 'DELETE');
+});

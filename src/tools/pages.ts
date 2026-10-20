@@ -1,12 +1,17 @@
 import {z} from 'zod';
 import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js';
 import type {GhostClient} from '../client/types';
+import {encodePageSelector} from '../client/pageSelector';
 import {contentMutableFields, copyParams, formatsParam} from './contentSchemas';
 
 const responseParams = {
   include: z.string().optional(),
   formats: formatsParam,
 };
+const pageSelector = z.string().refine(value => {
+  try { encodePageSelector(value); return true; }
+  catch { return false; }
+}, 'Invalid Ghost page selector');
 export const browseParams = {
   filter: z.string().optional(),
   order: z.string().optional(),
@@ -16,21 +21,21 @@ export const browseParams = {
   ...responseParams,
 };
 export const readParams = {
-  id: z.string().trim().min(1).optional(),
-  slug: z.string().trim().min(1).optional(),
+  id: pageSelector.optional(),
+  slug: pageSelector.optional(),
   fields: z.string().optional(),
   ...responseParams,
 };
 const pageMutableFields = {...contentMutableFields, custom_template: z.string().optional()};
 export const addParams = {title: z.string(), ...pageMutableFields, ...responseParams};
 export const editParams = {
-  id: z.string().trim().min(1),
+  id: pageSelector,
   updated_at: z.string().min(1),
   title: z.string().optional(),
   ...pageMutableFields,
   ...responseParams,
 };
-export const deleteParams = {id: z.string().trim().min(1)};
+export const deleteParams = {id: pageSelector};
 export type ToolInputs = {
   browse: z.infer<z.ZodObject<typeof browseParams>>;
   read: z.infer<z.ZodObject<typeof readParams>>;
