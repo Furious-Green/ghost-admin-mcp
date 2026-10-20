@@ -2,7 +2,7 @@
 
 Date: 2026-10-20
 Issue: https://github.com/Furious-Green/ghost-admin-mcp/issues/4
-Status: Approach 1 selected by the user; written specification awaiting review.
+Status: Written specification approved by the user on 2026-10-20.
 
 ## Intent and success criteria
 
@@ -174,6 +174,6 @@ remain a release/adoption blocker.
 - [x] Inspect issue, current client/tools, SDK capabilities, and official sources.
 - [x] Present alternatives; user selected SDK CRUD plus native-copy adapter.
 - [x] Write specification and self-review scope, contracts, safety, and ambiguity.
-- [ ] User reviews this written specification.
+- [x] User reviews this written specification.
 - [ ] Write implementation plan after specification approval.
 - [ ] User reviews plan and chooses execution method before implementation.
