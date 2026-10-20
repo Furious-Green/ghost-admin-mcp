@@ -2,6 +2,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { GhostClient } from "../client/types";
+import { contentMutableFields, copyParams } from './contentSchemas';
 
 // Parameter schemas as ZodRawShape (object literals)
 export const browseParams = {
@@ -17,48 +18,9 @@ export const readParams = {
 // Shared mutable post fields — accepted by both posts_add and posts_edit.
 // Mirrors the Ghost Admin API post resource:
 // https://ghost.org/docs/admin-api/#the-post-object
-const tagRef = z.union([
-  z.string(),
-  z.object({
-    id: z.string().optional(),
-    slug: z.string().optional(),
-    name: z.string().optional(),
-  }),
-]);
-const authorRef = z.union([
-  z.string(),
-  z.object({
-    id: z.string().optional(),
-    slug: z.string().optional(),
-    email: z.string().optional(),
-  }),
-]);
 const postMutableFields = {
-  html: z.string().optional(),
-  lexical: z.string().optional(),
-  status: z.string().optional(),
-  slug: z.string().optional(),
-  visibility: z.string().optional(),
-  featured: z.boolean().optional(),
+  ...contentMutableFields,
   email_only: z.boolean().optional(),
-  published_at: z.string().optional(),
-  custom_excerpt: z.string().optional(),
-  feature_image: z.string().optional(),
-  feature_image_alt: z.string().optional(),
-  feature_image_caption: z.string().optional(),
-  meta_title: z.string().optional(),
-  meta_description: z.string().optional(),
-  og_title: z.string().optional(),
-  og_description: z.string().optional(),
-  og_image: z.string().optional(),
-  twitter_title: z.string().optional(),
-  twitter_description: z.string().optional(),
-  twitter_image: z.string().optional(),
-  codeinjection_head: z.string().optional(),
-  codeinjection_foot: z.string().optional(),
-  canonical_url: z.string().optional(),
-  tags: z.array(tagRef).optional(),
-  authors: z.array(authorRef).optional(),
 };
 export const addParams = {
   title: z.string(),
@@ -83,6 +45,9 @@ export type ToolInputs = {
 };
 
 export function registerPostTools(server: McpServer, ghostApiClient: GhostClient) {
+  server.tool('posts_copy', copyParams, async args => ({
+    content: [{type: 'text', text: JSON.stringify(await ghostApiClient.posts.copy(args), null, 2)}],
+  }));
   // Browse posts
   server.tool(
     "posts_browse",

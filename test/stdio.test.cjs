@@ -1,7 +1,7 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const {spawnSync} = require('node:child_process');
-const {config, toolNames} = require('./helpers/fixtures.cjs');
+const {config, toolNames, additionalToolNames} = require('./helpers/fixtures.cjs');
 const {LATEST_PROTOCOL_VERSION} = require('@modelcontextprotocol/sdk/types.js');
 
 test('CLI missing configuration fails safely without protocol output', {timeout: 10000}, () => {
@@ -35,7 +35,7 @@ test('stdio initializes and discovers all tools without any Ghost HTTP calls', {
     names.push(...page.tools.map(tool => tool.name));
     cursor = page.nextCursor;
   } while (cursor);
-  assert.deepEqual(names.sort(), toolNames);
+  assert.deepEqual(names.sort(), [...toolNames, ...additionalToolNames].sort());
   assert.equal(cli.requests.length, 0);
   assert.ok(cli.messages.length >= 2);
   assert.ok(cli.messages.every(message => message.jsonrpc === '2.0'));

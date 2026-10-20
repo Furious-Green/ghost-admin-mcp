@@ -5,6 +5,7 @@ import {
     handleNewsletterResource, handlePostResource, handleBlogInfoResource,
 } from './resources';
 import {registerPostTools} from './tools/posts';
+import {registerPageTools} from './tools/pages';
 import {registerMemberTools} from './tools/members';
 import {registerUserTools} from './tools/users';
 import {registerTagTools} from './tools/tags';
@@ -31,6 +32,7 @@ export function createServer(client: GhostClient): McpServer {
     server.resource('blog-info', 'blog://info', handleBlogInfoResource);
 
     registerPostTools(server, client);
+    registerPageTools(server, client);
     registerMemberTools(server, client);
     registerUserTools(server, client);
     registerTagTools(server, client);

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const {blockNetwork} = require('./helpers/networkGuard.cjs');
 after(blockNetwork());
 const {makeRecordingClient} = require('./helpers/recordingClient.cjs');
-const {config, families, backedFamilies, toolNames, entity, pagination, timestamp, permissionError} = require('./helpers/fixtures.cjs');
+const {config, families, backedFamilies, toolNames, additionalToolNames, entity, pagination, timestamp, permissionError} = require('./helpers/fixtures.cjs');
 
 async function harness(t) {
   const recording = makeRecordingClient();
@@ -26,8 +26,8 @@ async function allPages(list, property) {
 test('MCP discovery exposes the complete existing tool, template, resource and prompt surface', async t => {
   const {mcpClient, requests} = await harness(t);
   const tools = await allPages(params => mcpClient.listTools(params), 'tools');
-  assert.equal(tools.length, 42);
-  assert.deepEqual(tools.map(tool => tool.name).sort(), toolNames);
+  assert.equal(tools.length, 49);
+  assert.deepEqual(tools.map(tool => tool.name).sort(), [...toolNames, ...additionalToolNames].sort());
   const templates = await allPages(params => mcpClient.listResourceTemplates(params), 'resourceTemplates');
   assert.deepEqual(templates.map(item => item.uriTemplate).sort(), ['member://{member_id}', 'newsletter://{newsletter_id}', 'offer://{offer_id}', 'post://{post_id}', 'tier://{tier_id}', 'user://{user_id}']);
   const resources = await allPages(params => mcpClient.listResources(params), 'resources');

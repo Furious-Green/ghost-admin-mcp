@@ -22,6 +22,7 @@ exports.families = {
 };
 exports.backedFamilies = ['posts', 'members', 'users', 'tags', 'newsletters', 'webhooks'];
 exports.toolNames = Object.entries(exports.families).flatMap(([family, operations]) => Object.keys(operations).map(op => `${family}_${op}`)).sort();
+exports.additionalToolNames = ['pages_add', 'pages_browse', 'pages_copy', 'pages_delete', 'pages_edit', 'pages_read', 'posts_copy'];
 exports.permissionError = function permissionError() {
   const error = new Error('Request failed with status code 403');
   error.request = {headers: {Authorization: `Ghost ${exports.config.key}`}};

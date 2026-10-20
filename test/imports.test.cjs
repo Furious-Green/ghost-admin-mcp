@@ -16,8 +16,8 @@ function run(script) {
 test('tools and server construction do not load credentials, connect, or exit on import', () => {
   run(`
     const assert = require('node:assert/strict');
-    for (const module of ['config', 'ghostApi', 'client/sdkAdapter', 'prompts', 'resources',
-      ...['posts','members','users','tags','tiers','offers','newsletters','invites','roles','webhooks'].map(name => 'tools/' + name)]) {
+    for (const module of ['config', 'ghostApi', 'client/sdkAdapter', 'client/nativeCopy', 'client/nativeRequest', 'tools/contentSchemas', 'prompts', 'resources',
+      ...['posts','pages','members','users','tags','tiers','offers','newsletters','invites','roles','webhooks'].map(name => 'tools/' + name)]) {
       require('./build/' + module + '.js');
     }
     const {makeRecordingClient} = require('./test/helpers/recordingClient.cjs');

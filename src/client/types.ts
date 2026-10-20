@@ -1,4 +1,5 @@
 import type {ToolInputs as PostInputs} from '../tools/posts';
+import type {ToolInputs as PageInputs} from '../tools/pages';
 import type {ToolInputs as MemberInputs} from '../tools/members';
 import type {ToolInputs as UserInputs} from '../tools/users';
 import type {ToolInputs as TagInputs} from '../tools/tags';
@@ -15,12 +16,15 @@ export type GhostEntity = Record<string, unknown>;
 export type GhostMetadata = Record<string, unknown>;
 export type GhostArray = GhostEntity[] & {meta?: GhostMetadata};
 export type GhostResult = GhostEntity | GhostArray | undefined;
+export type CopyInput = {id: string; formats?: string};
+export type CopyOperation = (input: CopyInput) => Promise<GhostEntity>;
 export type ResourceClient<Inputs> = {
     [Key in keyof Inputs]: (input: Inputs[Key], options?: QueryOptions) => Promise<GhostResult>;
 };
 
 export interface GhostClient {
-    posts: ResourceClient<PostInputs>;
+    posts: ResourceClient<PostInputs> & {copy: CopyOperation};
+    pages: ResourceClient<PageInputs> & {copy: CopyOperation};
     members: ResourceClient<MemberInputs>;
     users: ResourceClient<UserInputs>;
     tags: ResourceClient<TagInputs>;

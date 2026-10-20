@@ -1,4 +1,6 @@
 import GhostAdminAPI from '@tryghost/admin-api';
+import {createNativeCopy} from './nativeCopy';
+import {encodePageSelector} from './pageSelector';
 import type {GhostClient, GhostConfig, GhostResult, QueryOptions, RequestExecutor} from './types';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -19,6 +21,7 @@ function checkResult(value: unknown): GhostResult {
 // This adapts capabilities; it does not implement routes the SDK does not have.
 export function createGhostClient(config: GhostConfig, options: {makeRequest?: RequestExecutor} = {}): GhostClient {
     const sdk: unknown = new GhostAdminAPI({...config, ...options});
+    const copy = createNativeCopy(config, options.makeRequest);
 
     function method(resource: string, operation: string) {
         return async (input: unknown, query?: QueryOptions): Promise<GhostResult> => {
@@ -27,7 +30,15 @@ export function createGhostClient(config: GhostConfig, options: {makeRequest?: R
             if (typeof fn !== 'function') {
                 throw new Error(`Unsupported Ghost SDK capability: ${resource}.${operation}`);
             }
-            const result: unknown = await Reflect.apply(fn, target, [input, query]);
+            let sdkInput = input;
+            if (resource === 'pages' && ['read', 'edit', 'delete'].includes(operation) && isRecord(input)) {
+                sdkInput = {
+                    ...input,
+                    ...(input.id !== undefined ? {id: encodePageSelector(input.id)} : {}),
+                    ...(operation === 'read' && input.slug !== undefined ? {slug: encodePageSelector(input.slug)} : {}),
+                };
+            }
+            const result: unknown = await Reflect.apply(fn, target, [sdkInput, query]);
             // Ghost returns no entity for successful deletes (often an empty body).
             if (operation === 'delete') return undefined;
             return checkResult(result);
@@ -42,7 +53,9 @@ export function createGhostClient(config: GhostConfig, options: {makeRequest?: R
     }
 
     return {
-        posts: crud('posts'), members: crud('members'), users: crud('users'),
+        posts: {...crud('posts'), copy: input => copy('posts', input)},
+        pages: {...crud('pages'), copy: input => copy('pages', input)},
+        members: crud('members'), users: crud('users'),
         tags: crud('tags'), tiers: crud('tiers'), offers: crud('offers'),
         newsletters: crud('newsletters'), invites: crud('invites'),
         roles: {browse: method('roles', 'browse'), read: method('roles', 'read')},
