@@ -25,7 +25,7 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 
 - Tiers/offers/invites/roles use native adapters for twelve supported operations. Contracts are verified against documentation and Ghost 5.130.0 source, not a live server; permissions and version differences still apply.
 - Pagination is returned when Ghost supplies it; this server never invents pagination or automatically fetches additional pages. Available paging controls remain resource-specific.
-- Both slices of [#6](https://github.com/Furious-Green/ghost-admin-mcp/issues/6) repair the exposed query/input schemas (see migrations below), not the full Admin API surface. Explicit email delivery/opt-in controls remain [#7](https://github.com/Furious-Green/ghost-admin-mcp/issues/7). Newsletter configuration tools do not provide an explicit send workflow.
+- Both slices of [#6](https://github.com/Furious-Green/ghost-admin-mcp/issues/6) repair the exposed query/input schemas (see migrations below), not the full Admin API surface. Explicit delivery uses `posts_edit`; newsletter configuration tools manage settings and optional creation-time opt-in, not content sending.
 - `newsletters_delete` and the direct client's newsletter delete method have been removed: Ghost 5.130.0 has no matching endpoint. There is no alias or automatic archive. Explicitly use `newsletters_edit` / `status: "archived"` where appropriate.
 - All seven MCP resource handlers return placeholder text, and the summarize-post prompt retains a limited HTML preview ([#11](https://github.com/Furious-Green/ghost-admin-mcp/issues/11)).
 - Available SDK methods do not prove that a Ghost version or credential permits an operation. Custom Integration keys have fixed restricted permissions; staff tokens act with the user's role. Never assume every key grants unrestricted admin access.
@@ -114,7 +114,7 @@ Metadata is retained as supplied by Ghost, including unknown keys and nested val
 {"data":{"id":"newsletter1","sender_email":null},"meta":{"sent_email_verification":["sender_email"]}}
 ```
 
-This reports pending verification, **not** an already-active new sender address. The returned `sender_email` stays unchanged until verification. Opt-in counts are preserved when Ghost returns them, without interpreting or fabricating them; new opt-in and delivery controls remain [#7](https://github.com/Furious-Green/ghost-admin-mcp/issues/7). Private consumers must explicitly adapt to this response change before separately approved adoption.
+This reports pending verification, **not** an already-active new sender address. The returned `sender_email` stays unchanged until verification. Opt-in counts are preserved when Ghost returns them, without interpreting or fabricating them; see explicit delivery and administration below. Private consumers must explicitly adapt to this response change before separately approved adoption.
 
 ## Strict content input migration
 
@@ -126,6 +126,7 @@ This reports pending verification, **not** an already-active new sender address.
 | Posts/pages read | `include`, `fields`, `formats` |
 | Posts/pages add | `include`, `formats` |
 | Posts/pages edit | `include`, `formats`, `save_revision` (boolean) |
+| Posts edit only | Additionally `newsletter`, `email_segment` (explicit delivery rules below) |
 | Posts/pages copy | `formats` only, plus required ID |
 | Tags browse | `filter`, `order`, `page`, `limit`, `include`, `fields` |
 | Tags read | `include`, `fields`, `filter` |
@@ -152,7 +153,7 @@ Edit timestamps must be valid date-times with a timezone (`Z` or offset). Read f
 {"name":"posts_edit","arguments":{"id":"ID_FROM_READ","updated_at":"2026-10-21T00:00:00.000Z","custom_template":null,"meta_description":null,"save_revision":true,"include":"post_revisions","formats":"html,lexical"}}
 ```
 
-API schema lengths/nullability and query options were checked against **Ghost 5.130.0**, including its pinned `@tryghost/admin-api-schema@4.5.10`, not just its database columns. `Accept-Version: v5.0` remains a minimum-version header, not a guarantee for every 5.x minor. Excluded here: generated/audit/database-only fields, experimental collections, custom `visibility_filter`, debug/internal transaction/conversion controls, post `show_title_and_feature_image`, and new email subject/delivery controls (#7). No arbitrary HTTP proxy or unknown-field escape hatch is added. Live version/permission compatibility remains unverified.
+API schema lengths/nullability and query options were checked against **Ghost 5.130.0**, including its pinned `@tryghost/admin-api-schema@4.5.10`, not just its database columns. `Accept-Version: v5.0` remains a minimum-version header, not a guarantee for every 5.x minor. Excluded here: generated/audit/database-only fields, experimental collections, custom `visibility_filter`, debug/internal transaction/conversion controls and post `show_title_and_feature_image`. Email subject/delivery controls are documented below. No arbitrary HTTP proxy or unknown-field escape hatch is added. Live version/permission compatibility remains unverified.
 
 ## Strict remaining-resource input migration
 
@@ -162,7 +163,7 @@ The second #6 slice makes members/users/newsletters/webhooks strict at both MCP 
 | --- | --- | --- | --- |
 | Members | filter, order, page, limit, fields, search, include | include; exactly one id/email | none |
 | Users | filter, order, page, limit, fields, include | include, fields, filter; exactly one id/slug/email | edit include |
-| Newsletters | filter, order, page, limit, fields, include | include, fields; exactly one id/slug | add/edit include |
+| Newsletters | filter, order, page, limit, fields, include | include, fields; exactly one id/slug | add/edit include; add-only opt_in_existing (boolean) |
 | Webhooks | no browse tool | no read tool | none |
 | Tiers | filter, order, page, limit, fields (server caveat above) | id only; no include | none |
 | Offers | filter only | id only | none |
