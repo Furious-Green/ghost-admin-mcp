@@ -1,0 +1,1 @@
+require('./networkGuard.cjs').blockNetwork();
