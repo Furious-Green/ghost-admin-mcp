@@ -1,4 +1,5 @@
 import GhostAdminAPI from '@tryghost/admin-api';
+import {createNativeCopy} from './nativeCopy';
 import type {GhostClient, GhostConfig, GhostResult, QueryOptions, RequestExecutor} from './types';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -19,6 +20,7 @@ function checkResult(value: unknown): GhostResult {
 // This adapts capabilities; it does not implement routes the SDK does not have.
 export function createGhostClient(config: GhostConfig, options: {makeRequest?: RequestExecutor} = {}): GhostClient {
     const sdk: unknown = new GhostAdminAPI({...config, ...options});
+    const copy = createNativeCopy(config, options.makeRequest);
 
     function method(resource: string, operation: string) {
         return async (input: unknown, query?: QueryOptions): Promise<GhostResult> => {
@@ -42,7 +44,9 @@ export function createGhostClient(config: GhostConfig, options: {makeRequest?: R
     }
 
     return {
-        posts: crud('posts'), pages: crud('pages'), members: crud('members'), users: crud('users'),
+        posts: {...crud('posts'), copy: input => copy('posts', input)},
+        pages: {...crud('pages'), copy: input => copy('pages', input)},
+        members: crud('members'), users: crud('users'),
         tags: crud('tags'), tiers: crud('tiers'), offers: crud('offers'),
         newsletters: crud('newsletters'), invites: crud('invites'),
         roles: {browse: method('roles', 'browse'), read: method('roles', 'read')},
