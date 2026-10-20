@@ -4,15 +4,20 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ghostApiClient } from "../ghostApi";
 
 // Parameter schemas as ZodRawShape (object literals)
-const browseParams = {
+export const browseParams = {
   filter: z.string().optional(),
   limit: z.number().optional(),
   page: z.number().optional(),
   order: z.string().optional(),
 };
-const readParams = {
+export const readParams = {
   id: z.string().optional(),
   name: z.string().optional(),
+};
+
+export type ToolInputs = {
+  browse: z.infer<z.ZodObject<typeof browseParams>>;
+  read: z.infer<z.ZodObject<typeof readParams>>;
 };
 
 export function registerRoleTools(server: McpServer) {

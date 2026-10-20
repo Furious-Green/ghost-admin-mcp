@@ -4,18 +4,24 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ghostApiClient } from "../ghostApi";
 
 // Parameter schemas as ZodRawShape (object literals)
-const browseParams = {
+export const browseParams = {
   filter: z.string().optional(),
   limit: z.number().optional(),
   page: z.number().optional(),
   order: z.string().optional(),
 };
-const addParams = {
+export const addParams = {
   role_id: z.string(),
   email: z.string(),
 };
-const deleteParams = {
+export const deleteParams = {
   id: z.string(),
+};
+
+export type ToolInputs = {
+  browse: z.infer<z.ZodObject<typeof browseParams>>;
+  add: z.infer<z.ZodObject<typeof addParams>>;
+  delete: z.infer<z.ZodObject<typeof deleteParams>>;
 };
 
 export function registerInviteTools(server: McpServer) {

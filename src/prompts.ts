@@ -11,9 +11,10 @@ export function registerPrompts(server: McpServer) {
     async ({ postId }) => {
       // Fetch the post by ID
       const post = await ghostApiClient.posts.read({ id: postId });
-      const title = post.title || "";
-      const excerpt = post.excerpt || "";
-      const html = post.html || "";
+      const record = post && !Array.isArray(post) ? post : {};
+      const title = typeof record.title === "string" ? record.title : "";
+      const excerpt = typeof record.excerpt === "string" ? record.excerpt : "";
+      const html = typeof record.html === "string" ? record.html : "";
 
       // Compose a summary message
       const summary = `Title: ${title}\nExcerpt: ${excerpt}\n\nContent Preview:\n${html.slice(0, 300)}...`;
