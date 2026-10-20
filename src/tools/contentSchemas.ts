@@ -36,3 +36,4 @@ export const contentMutableFields = {
 };
 
 export const formatsParam = z.enum(['html', 'lexical', 'html,lexical', 'lexical,html']).optional();
+export const copyParams = {id: z.string().min(1), formats: formatsParam};

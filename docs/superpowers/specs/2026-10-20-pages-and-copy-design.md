@@ -175,5 +175,5 @@ remain a release/adoption blocker.
 - [x] Present alternatives; user selected SDK CRUD plus native-copy adapter.
 - [x] Write specification and self-review scope, contracts, safety, and ambiguity.
 - [x] User reviews this written specification.
-- [ ] Write implementation plan after specification approval.
-- [ ] User reviews plan and chooses execution method before implementation.
+- [x] Write implementation plan after specification approval.
+- [x] User reviews plan and chooses execution method before implementation.

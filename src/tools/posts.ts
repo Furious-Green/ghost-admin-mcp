@@ -2,7 +2,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { GhostClient } from "../client/types";
-import { contentMutableFields } from './contentSchemas';
+import { contentMutableFields, copyParams } from './contentSchemas';
 
 // Parameter schemas as ZodRawShape (object literals)
 export const browseParams = {
@@ -45,6 +45,9 @@ export type ToolInputs = {
 };
 
 export function registerPostTools(server: McpServer, ghostApiClient: GhostClient) {
+  server.tool('posts_copy', copyParams, async args => ({
+    content: [{type: 'text', text: JSON.stringify(await ghostApiClient.posts.copy(args), null, 2)}],
+  }));
   // Browse posts
   server.tool(
     "posts_browse",
