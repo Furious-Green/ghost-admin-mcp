@@ -36,17 +36,20 @@ function queries(includes: string[]) {
         delete: {},
     };
 }
-export const postQueryShapes = queries(postIncludes);
+const postQueries = queries(postIncludes);
+export const postQueryShapes = {...postQueries, edit: {...postQueries.edit,
+    newsletter: selector.and(z.string().max(191)).optional(), email_segment: nonblank.optional(),
+}};
 export const pageQueryShapes = queries(pageIncludes);
 export const copyParams = {id: selector, formats: formatsParam};
-const postFields = {...contentMutableFields, status: z.enum(['draft', 'published', 'scheduled', 'sent']).optional(), email_only: z.boolean().optional()};
+const postFields = {...contentMutableFields, status: z.enum(['draft', 'published', 'scheduled', 'sent']).optional(), email_only: z.boolean().optional(), email_subject: nullableText(300)};
 const pageFields = {...contentMutableFields, status: z.enum(['draft', 'published', 'scheduled']).optional(), show_title_and_feature_image: z.boolean().optional()};
-function shapes<Fields extends z.ZodRawShape>(fields: Fields, query: ReturnType<typeof queries>) {
+function shapes<Fields extends z.ZodRawShape, Query extends ReturnType<typeof queries>>(fields: Fields, query: Query) {
     return {
         browse: query.browse,
         read: {id: selector.optional(), slug: selector.optional(), ...query.read},
         add: {title: z.string().max(2000), ...fields, ...query.add},
-        edit: {id: selector, updated_at: dateTime, title: z.string().max(2000).optional(), ...fields, ...query.edit},
+        edit: {id: selector, updated_at: dateTime, title: z.string().max(2000).optional(), ...fields, ...(query.edit as Query['edit'])},
         delete: {id: selector}, copy: copyParams,
     };
 }

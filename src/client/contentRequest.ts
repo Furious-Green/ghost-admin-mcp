@@ -2,6 +2,7 @@ import {z} from 'zod';
 import {postShapes, pageShapes, postQueryShapes, pageQueryShapes} from '../schemas/content';
 import {tagShapes, tagQueryShapes} from '../schemas/tags';
 import {encodePageSelector} from './pageSelector';
+import {validatePostDeliveryInput} from '../schemas/postDelivery';
 import type {QueryOptions} from './types';
 
 type Resource = 'posts' | 'pages' | 'tags';
@@ -23,6 +24,7 @@ export function prepareContentRequest(resource: Resource, operation: Operation, 
         ...Object.keys(input as object).map(key => [key, parsed[key]]),
         ...Object.keys(options ?? {}).filter(key => key !== 'source').map(key => [key, externalOptions[key]]),
     ]);
+    if (resource === 'posts' && write) validatePostDeliveryInput(combined);
     if (operation === 'read' && Number(combined.id !== undefined) + Number(combined.slug !== undefined) !== 1) {
         throw new Error(`Provide exactly one ${resource === 'pages' ? 'page' : resource === 'posts' ? 'post' : 'tag'} selector: id or slug.`);
     }

@@ -83,3 +83,8 @@ client.members.read({id: 'one', fields: 'id'});
 client.tiers.read({id: 'one', include: 'benefits'});
 // @ts-expect-error Offer cadence is month/year only.
 client.offers.add({name: 'A', code: 'a', cadence: 'week', duration: 'once', amount: 10, tier_id: 'one', type: 'percent'});
+client.posts.edit({id: 'one', updated_at: '2026-10-21T00:00:00Z', status: 'published', newsletter: 'weekly', email_segment: 'all', email_only: true, email_subject: null});
+// @ts-expect-error Delivery routing is not supported on creation.
+client.posts.add({title: 'A', newsletter: 'weekly'});
+// @ts-expect-error Pages do not route newsletters.
+client.pages.edit({id: 'one', updated_at: '2026-10-21T00:00:00Z', newsletter: 'weekly'});
