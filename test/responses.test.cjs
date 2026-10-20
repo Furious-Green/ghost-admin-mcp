@@ -24,5 +24,8 @@ test('normalization rejects malformed resource envelopes without reflecting payl
     assert.throws(() => normalizeEntity('posts', value), {message: 'Unexpected Ghost posts response'});
   }
   for (const posts of [[], [{}, {}]]) assert.throws(() => normalizeEntity('posts', {posts}), /Unexpected Ghost posts response/);
+  // An injected decoded-body executor must not turn a hole into data:undefined.
+  assert.throws(() => normalizeEntity('posts', {posts: Array(1)}), /Unexpected Ghost posts response/);
+  assert.throws(() => normalizeCollection('posts', {posts: Array(1)}), /Unexpected Ghost posts response/);
   assert.throws(() => normalizeEntity('pages', {pages: []}, 'Unexpected Ghost copy response'), {message: 'Unexpected Ghost copy response'});
 });

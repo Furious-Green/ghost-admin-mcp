@@ -10,7 +10,7 @@ function record(value: unknown): value is Record<string, unknown> {
 
 export function normalizeCollection(resource: string, value: unknown, errorMessage = `Unexpected Ghost ${resource} response`): CollectionResponse {
     const entities = record(value) ? value[resource] : undefined;
-    if (!Array.isArray(entities) || !entities.every(record)
+    if (!Array.isArray(entities) || !Array.from(entities).every(record)
         || (record(value) && value.meta !== undefined && !record(value.meta))) {
         throw new Error(errorMessage);
     }
