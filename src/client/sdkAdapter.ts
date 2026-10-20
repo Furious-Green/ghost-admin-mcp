@@ -1,6 +1,7 @@
 import GhostAdminAPI from '@tryghost/admin-api';
 import {createNativeCopy} from './nativeCopy';
 import {createCommerceClients} from './commerceClient';
+import {createStaffClients} from './staffClient';
 import {encodePageSelector} from './pageSelector';
 import type {GhostClient, GhostConfig, GhostResult, QueryOptions, RequestExecutor} from './types';
 
@@ -19,7 +20,7 @@ function checkResult(value: unknown): GhostResult {
     throw new Error('Unexpected Ghost SDK response');
 }
 
-// This adapts capabilities; it does not implement routes the SDK does not have.
+// Retain working SDK capabilities and compose focused native adapters where needed.
 export function createGhostClient(config: GhostConfig, options: {makeRequest?: RequestExecutor} = {}): GhostClient {
     const sdk: unknown = new GhostAdminAPI({...config, ...options});
     const copy = createNativeCopy(config, options.makeRequest);
@@ -58,8 +59,7 @@ export function createGhostClient(config: GhostConfig, options: {makeRequest?: R
         pages: {...crud('pages'), copy: input => copy('pages', input)},
         members: crud('members'), users: crud('users'),
         tags: crud('tags'), ...createCommerceClients(config, options.makeRequest),
-        newsletters: crud('newsletters'), invites: crud('invites'),
-        roles: {browse: method('roles', 'browse'), read: method('roles', 'read')},
+        newsletters: crud('newsletters'), ...createStaffClients(config, options.makeRequest),
         webhooks: {add: method('webhooks', 'add'), edit: method('webhooks', 'edit'), delete: method('webhooks', 'delete')},
     };
 }

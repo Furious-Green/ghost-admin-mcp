@@ -18,7 +18,7 @@ exports.families = {
   tiers: {browse: {}, read: {id: 'abc123'}, add: {name: 'Example'}, edit: {id: 'abc123', name: 'Changed'}},
   offers: {browse: {}, read: {id: 'abc123'}, add: {name: 'Example', code: 'example', cadence: 'month', duration: 'once', amount: 10, tier_id: 'tier1', type: 'percent'}, edit: {id: 'abc123', name: 'Changed'}},
   invites: {browse: {}, add: {role_id: 'role1', email: 'staff@example.invalid'}, delete: {id: 'abc123'}},
-  roles: {browse: {}, read: {id: 'abc123'}},
+  roles: {browse: {}},
 };
 exports.backedFamilies = ['posts', 'members', 'users', 'tags', 'newsletters', 'webhooks'];
 exports.toolNames = Object.entries(exports.families).flatMap(([family, operations]) => Object.keys(operations).map(op => `${family}_${op}`)).sort();

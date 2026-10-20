@@ -32,3 +32,12 @@ client.tiers.read({slug: 'paid'});
 client.offers.read({code: 'sale'});
 client.tiers.edit({id: 'x', active: false});
 client.offers.edit({id: 'x', status: 'archived'});
+// @ts-expect-error Roles expose browse only.
+client.roles.read({id: 'x'});
+// @ts-expect-error Roles are not paginated.
+client.roles.browse({page: 1});
+// @ts-expect-error Offers are not paginated.
+client.offers.browse({page: 1});
+client.roles.browse({permissions: 'assign'});
+// @ts-expect-error Invites do not expose a read tool.
+client.invites.read({id: 'x'});

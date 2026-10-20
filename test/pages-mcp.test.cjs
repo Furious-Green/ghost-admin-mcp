@@ -32,7 +32,7 @@ test('MCP inventory retains supported original tools and exactly seven page/copy
     names.push(...page.tools.map(tool => tool.name));
     cursor = page.nextCursor;
   } while (cursor);
-  assert.equal(names.length, 47);
+  assert.equal(names.length, 46);
   assert.deepEqual(names.sort(), [...toolNames, ...additionalToolNames].sort());
   assert.equal(requests.length, 0);
 });
