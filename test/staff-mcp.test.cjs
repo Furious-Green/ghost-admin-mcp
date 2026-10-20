@@ -32,7 +32,7 @@ for (const [name, args, family, expected] of calls) test(`${name} dispatches ove
   r.enqueueResponse(name === 'invites_delete' ? '' : {[family]: [{id: 'one'}]});
   const result = await r.mcpClient.callTool({name, arguments: args});
   assert.notEqual(result.isError, true);
-  assert.deepEqual(name === 'invites_delete' ? result.content[0].text : JSON.parse(result.content[0].text), expected);
+  assert.deepEqual(name === 'invites_delete' ? result.content[0].text : JSON.parse(result.content[0].text), name === 'invites_delete' ? expected : {data: expected});
   assert.equal(r.requests.length, 1);
 });
 test('staff MCP rejects legacy role queries, invalid invites and traversal before HTTP', async t => {

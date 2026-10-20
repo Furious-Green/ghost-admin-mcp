@@ -58,7 +58,7 @@ for (const [index, c] of cases.entries()) {
     assert.deepEqual(requests[0].data, c.body);
     assert.equal(requests[0].headers['Accept-Version'], 'v5.0');
     assert.match(requests[0].headers.Authorization, /^Ghost /);
-    assert.deepEqual(result, c.operation === 'delete' ? undefined : entity);
+    assert.deepEqual(result, c.operation === 'delete' ? undefined : {data: c.operation === 'browse' ? [entity] : entity});
   });
 }
 

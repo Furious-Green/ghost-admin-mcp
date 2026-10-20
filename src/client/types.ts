@@ -9,17 +9,19 @@ import type {ToolInputs as NewsletterInputs} from '../tools/newsletters';
 import type {ToolInputs as InviteInputs} from '../tools/invites';
 import type {ToolInputs as RoleInputs} from '../tools/roles';
 import type {ToolInputs as WebhookInputs} from '../tools/webhooks';
+import type {CollectionResponse, EntityResponse} from './responses';
+export type {GhostResponse, CollectionResponse, EntityResponse} from './responses';
 
 export type GhostConfig = {url: string; key: string; version: string};
 export type QueryOptions = Record<string, string | number | boolean | undefined>;
 export type GhostEntity = Record<string, unknown>;
 export type GhostMetadata = Record<string, unknown>;
-export type GhostArray = GhostEntity[] & {meta?: GhostMetadata};
-export type GhostResult = GhostEntity | GhostArray | undefined;
+export type GhostResult = EntityResponse | CollectionResponse | undefined;
+export type OperationResult<K> = K extends 'browse' ? CollectionResponse : K extends 'delete' ? undefined : EntityResponse;
 export type CopyInput = {id: string; formats?: string};
-export type CopyOperation = (input: CopyInput) => Promise<GhostEntity>;
+export type CopyOperation = (input: CopyInput) => Promise<EntityResponse>;
 export type ResourceClient<Inputs> = {
-    [Key in keyof Inputs]: (input: Inputs[Key], options?: QueryOptions) => Promise<GhostResult>;
+    [Key in keyof Inputs]: (input: Inputs[Key], options?: QueryOptions) => Promise<OperationResult<Key>>;
 };
 
 export interface GhostClient {

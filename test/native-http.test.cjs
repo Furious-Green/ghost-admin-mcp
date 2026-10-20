@@ -45,7 +45,7 @@ test('commerce HTTP serializes nested tier, confines Unicode edit IDs and never 
     else res.writeHead(409, {'Content-Type': 'application/json'}).end(JSON.stringify({errors: [{type: 'ConflictError', message: config.key}]}));
   });
   const c = client(f.url + '/blog');
-  assert.deepEqual(await c.offers.add({name: 'Sale', code: 'sale', cadence: 'month', duration: 'once', amount: 10, tier_id: 'tier1', type: 'percent'}), {id: 'sale'});
+  assert.deepEqual(await c.offers.add({name: 'Sale', code: 'sale', cadence: 'month', duration: 'once', amount: 10, tier_id: 'tier1', type: 'percent'}), {data: {id: 'sale'}});
   assert.deepEqual(JSON.parse(f.requests[0].body).offers[0].tier, {id: 'tier1'});
   assert.equal(JSON.parse(f.requests[0].body).offers[0].tier_id, undefined);
   await assert.rejects(c.tiers.edit({id: 'café space', active: false}), {message: 'Ghost tiers edit failed (HTTP 409).'});
@@ -62,9 +62,9 @@ test('staff HTTP sends only native invite JSON, deletes without body and forward
     else res.setHeader('Content-Type', 'application/json').end(req.url.startsWith('/ghost/api/admin/roles/') ? '{"roles":[{"id":"role1"}]}' : '{"invites":[{"id":"invite1"}]}');
   });
   const c = client(f.url);
-  assert.deepEqual(await c.invites.add({role_id: 'role1', email: 'staff@example.invalid'}), {id: 'invite1'});
+  assert.deepEqual(await c.invites.add({role_id: 'role1', email: 'staff@example.invalid'}), {data: {id: 'invite1'}});
   assert.equal(await c.invites.delete({id: 'invite1'}), undefined);
-  assert.deepEqual(await c.roles.browse({permissions: 'assign'}), [{id: 'role1'}]);
+  assert.deepEqual(await c.roles.browse({permissions: 'assign'}), {data: [{id: 'role1'}]});
   assert.deepEqual(JSON.parse(f.requests[0].body), {invites: [{role_id: 'role1', email: 'staff@example.invalid'}]});
   assert.equal(f.requests[0].headers['content-type'], 'application/json');
   assert.equal(f.requests[1].url, '/ghost/api/admin/invites/invite1/');
@@ -100,7 +100,7 @@ test('staff HTTP refuses redirects and does not repeat a timed-out invitation', 
 
 test('default HTTP copy sends authenticated POST with no body and preserves query/subdirectory', {timeout: 10000}, async t => {
   const f = await fixture(t, (_req, res) => res.setHeader('Content-Type', 'application/json').end(JSON.stringify({pages: [{id: 'copy1'}]})));
-  assert.deepEqual(await client(f.url + '/blog').pages.copy({id: 'abc123', formats: 'html,lexical'}), {id: 'copy1'});
+  assert.deepEqual(await client(f.url + '/blog').pages.copy({id: 'abc123', formats: 'html,lexical'}), {data: {id: 'copy1'}});
   assert.equal(f.requests.length, 1);
   const request = f.requests[0];
   assert.equal(request.method, 'POST');

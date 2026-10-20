@@ -27,7 +27,7 @@ for (const [family, operations] of Object.entries(families)) {
       assert.equal(request.headers['Accept-Version'], 'v5.0');
       assert.match(request.headers.Authorization, /^Ghost [^.]+\.[^.]+\.[^.]+$/);
       assert.ok(!JSON.stringify(result)?.includes(config.key));
-      assert.deepEqual(result, operation === 'delete' ? undefined : entity);
+      assert.deepEqual(result, operation === 'delete' ? undefined : {data: operation === 'browse' ? [entity] : entity});
     });
   }
 }
@@ -78,9 +78,9 @@ test('adapter accepts an empty HTTP delete response without inventing an entity'
 test('adapter validates unknown SDK results without projecting entity fields', async () => {
   const {client, enqueueResponse} = makeRecordingClient();
   enqueueResponse({posts: [{id: 'abc123', custom_property: {nested: 'retained'}}]});
-  assert.deepEqual(await client.posts.read({id: 'abc123'}), {id: 'abc123', custom_property: {nested: 'retained'}});
+  assert.deepEqual(await client.posts.read({id: 'abc123'}), {data: {id: 'abc123', custom_property: {nested: 'retained'}}});
   enqueueResponse({posts: ['not an entity']});
   await assert.rejects(client.posts.browse({}), /Unexpected Ghost SDK response/);
   enqueueResponse({posts: [], meta: 'not metadata'});
-  await assert.rejects(client.posts.browse({}), /Unexpected Ghost SDK response metadata/);
+  await assert.rejects(client.posts.browse({}), /Unexpected Ghost SDK response/);
 });

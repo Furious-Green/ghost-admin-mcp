@@ -1,32 +1,41 @@
 import GhostAdminAPI from '@tryghost/admin-api';
+import {AsyncLocalStorage} from 'node:async_hooks';
 import {createNativeCopy} from './nativeCopy';
 import {createCommerceClients} from './commerceClient';
 import {createStaffClients} from './staffClient';
 import {encodePageSelector} from './pageSelector';
-import type {GhostClient, GhostConfig, GhostResult, QueryOptions, RequestExecutor} from './types';
+import {normalizeCollection, normalizeEntity} from './responses';
+import {createSdkRequestExecutor} from './sdkRequest';
+import type {CollectionResponse, EntityResponse, GhostClient, GhostConfig, OperationResult, QueryOptions, RequestExecutor} from './types';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function checkResult(value: unknown): GhostResult {
-    if (value === undefined || isRecord(value)) return value;
-    if (Array.isArray(value) && value.every(isRecord)) {
-        if ('meta' in value && value.meta !== undefined && !isRecord(value.meta)) {
-            throw new Error('Unexpected Ghost SDK response metadata');
-        }
-        return value;
-    }
-    throw new Error('Unexpected Ghost SDK response');
-}
+type Operation = 'browse' | 'read' | 'add' | 'edit' | 'delete';
+type Invocation = {resource: string; operation: Operation; result?: CollectionResponse | EntityResponse};
 
 // Retain working SDK capabilities and compose focused native adapters where needed.
 export function createGhostClient(config: GhostConfig, options: {makeRequest?: RequestExecutor} = {}): GhostClient {
-    const sdk: unknown = new GhostAdminAPI({...config, ...options});
+    const invocations = new AsyncLocalStorage<Invocation>();
+    const execute = options.makeRequest ?? createSdkRequestExecutor();
+    const sdk: unknown = new GhostAdminAPI({...config, makeRequest: async request => {
+        const invocation = invocations.getStore();
+        if (!invocation) throw new Error('Unexpected Ghost SDK response');
+        const body = await execute(request);
+        if (invocation.operation !== 'delete') {
+            // Capture before the SDK unwraps singletons or attaches hidden array
+            // metadata. Each async invocation owns its result, even for the same resource.
+            invocation.result = invocation.operation === 'browse'
+                ? normalizeCollection(invocation.resource, body, 'Unexpected Ghost SDK response')
+                : normalizeEntity(invocation.resource, body, 'Unexpected Ghost SDK response');
+        }
+        return body;
+    }});
     const copy = createNativeCopy(config, options.makeRequest);
 
-    function method(resource: string, operation: string) {
-        return async (input: unknown, query?: QueryOptions): Promise<GhostResult> => {
+    function method<K extends Operation>(resource: string, operation: K) {
+        return async (input: unknown, query?: QueryOptions): Promise<OperationResult<K>> => {
             const target = isRecord(sdk) ? sdk[resource] : undefined;
             const fn = isRecord(target) ? target[operation] : undefined;
             if (typeof fn !== 'function') {
@@ -40,10 +49,14 @@ export function createGhostClient(config: GhostConfig, options: {makeRequest?: R
                     ...(operation === 'read' && input.slug !== undefined ? {slug: encodePageSelector(input.slug)} : {}),
                 };
             }
-            const result: unknown = await Reflect.apply(fn, target, [sdkInput, query]);
-            // Ghost returns no entity for successful deletes (often an empty body).
-            if (operation === 'delete') return undefined;
-            return checkResult(result);
+            const invocation: Invocation = {resource, operation};
+            return invocations.run(invocation, async () => {
+                await Reflect.apply(fn, target, [sdkInput, query]);
+                if (operation === 'delete') return undefined as OperationResult<K>;
+                if (!invocation.result) throw new Error('Unexpected Ghost SDK response');
+                // The operation selected both normalization and this mapped return type.
+                return invocation.result as OperationResult<K>;
+            });
         };
     }
 

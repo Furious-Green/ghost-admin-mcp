@@ -50,7 +50,7 @@ for (const [index, c] of cases.entries()) {
     assert.deepEqual(requests[0].params, c.query);
     assert.deepEqual(requests[0].data, c.data);
     if (c.method === 'DELETE') assert.equal(result.content[0].text, 'Page with id abc123 deleted.');
-    else assert.deepEqual(JSON.parse(result.content[0].text), isCopy ? copied : entity);
+    else assert.deepEqual(JSON.parse(result.content[0].text), {data: isCopy ? copied : c.name === 'pages_browse' ? [entity] : entity});
   });
 }
 test('MCP rejects missing/both page selectors before dispatch', async t => {
@@ -91,12 +91,12 @@ test('MCP page writes retain content metadata while removing post-only and unkno
   await call('posts_add', {title: 'Post', email_only: true, custom_template: 'discard'});
   assert.deepEqual(requests[3].data, {posts: [{title: 'Post', email_only: true}]});
 });
-test('known issue #5: pages browse drops pagination metadata on empty/nonempty arrays', async t => {
+test('pages browse preserves pagination metadata on empty/nonempty collections', async t => {
   const {call, enqueueResponse} = await setup(t);
   for (const entities of [[entity], []]) {
     enqueueResponse({pages: entities, meta: {pagination}});
     const output = await call('pages_browse', {});
-    assert.deepEqual(JSON.parse(output.content[0].text), entities);
+    assert.deepEqual(JSON.parse(output.content[0].text), {data: entities, meta: {pagination}});
   }
 });
 test('page deletion failure is never reported as success', async t => {
