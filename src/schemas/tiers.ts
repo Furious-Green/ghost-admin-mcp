@@ -1,22 +1,19 @@
 import {z} from 'zod';
 import {encodeNativeId} from '../client/nativeAdmin';
+import {csv, nonblank, nullableText, pagingParams} from './query';
 
 export const nativeId = z.string().refine(value => {
     try { encodeNativeId(value); return true; } catch { return false; }
 }, 'Expected a nonempty, safe single-segment ID');
-const name = z.string().refine(value => Boolean(value.trim()), 'Expected nonempty name');
-const include = z.string().refine(value => value.split(',').every(part =>
-    ['monthly_price', 'yearly_price', 'benefits'].includes(part)), 'Unsupported tier include');
+const name = z.string().max(191).refine(value => Boolean(value.trim()), 'Expected nonempty name');
 export const browseParams = {
-    filter: z.string().optional(), limit: z.union([z.number().int().positive(), z.literal('all')]).optional(),
-    page: z.number().int().positive().optional(), order: z.string().optional(), fields: z.string().optional(),
-    include: include.optional(),
+    ...pagingParams, filter: nonblank.optional(), order: nonblank.optional(), fields: csv().optional(),
 };
-export const readParams = {id: nativeId, include: include.optional()};
+export const readParams = {id: nativeId};
 export const addParams = {
-    name, description: z.string().optional(), welcome_page_url: z.string().optional(),
-    visibility: z.string().optional(), monthly_price: z.number().int().nonnegative().optional(),
-    yearly_price: z.number().int().nonnegative().optional(), currency: z.string().optional(),
+    name, description: nullableText(191), welcome_page_url: nullableText(2000),
+    visibility: z.enum(['public', 'none']).optional(), monthly_price: z.number().int().safe().nonnegative().optional(),
+    yearly_price: z.number().int().safe().nonnegative().optional(), currency: nonblank.optional(),
     benefits: z.array(z.string()).optional(),
 };
 export const editParams = {...addParams, id: nativeId, name: name.optional(), active: z.boolean().optional()};
