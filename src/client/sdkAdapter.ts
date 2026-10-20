@@ -42,7 +42,7 @@ export function createGhostClient(config: GhostConfig, options: {makeRequest?: R
     }
 
     return {
-        posts: crud('posts'), members: crud('members'), users: crud('users'),
+        posts: crud('posts'), pages: crud('pages'), members: crud('members'), users: crud('users'),
         tags: crud('tags'), tiers: crud('tiers'), offers: crud('offers'),
         newsletters: crud('newsletters'), invites: crud('invites'),
         roles: {browse: method('roles', 'browse'), read: method('roles', 'read')},

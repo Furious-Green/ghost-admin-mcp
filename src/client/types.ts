@@ -1,4 +1,5 @@
 import type {ToolInputs as PostInputs} from '../tools/posts';
+import type {ToolInputs as PageInputs} from '../tools/pages';
 import type {ToolInputs as MemberInputs} from '../tools/members';
 import type {ToolInputs as UserInputs} from '../tools/users';
 import type {ToolInputs as TagInputs} from '../tools/tags';
@@ -21,6 +22,7 @@ export type ResourceClient<Inputs> = {
 
 export interface GhostClient {
     posts: ResourceClient<PostInputs>;
+    pages: ResourceClient<PageInputs>;
     members: ResourceClient<MemberInputs>;
     users: ResourceClient<UserInputs>;
     tags: ResourceClient<TagInputs>;
