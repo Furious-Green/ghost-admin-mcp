@@ -1,9 +1,9 @@
 import {z} from 'zod';
 import {nativeId} from './tiers';
+import {csv, nonblank, pagingParams} from './query';
 
 export const inviteBrowseParams = {
-    filter: z.string().optional(), limit: z.union([z.number().int().positive(), z.literal('all')]).optional(),
-    page: z.number().int().positive().optional(), order: z.string().optional(), fields: z.string().optional(),
+    ...pagingParams, filter: nonblank.optional(), order: nonblank.optional(), fields: csv().optional(),
 };
 export const inviteAddParams = {role_id: nativeId, email: z.string().email()};
 export const inviteDeleteParams = {id: nativeId};

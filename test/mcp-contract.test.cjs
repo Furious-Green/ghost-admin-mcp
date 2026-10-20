@@ -65,10 +65,10 @@ for (const [family, operations] of Object.entries(families)) {
   }
 }
 
-test('MCP parsing retains supported templates while non-slice member queries remain unchanged', async t => {
+test('MCP parsing retains supported templates and validates explicit member paging', async t => {
   const {mcpClient, requests} = await harness(t);
   await assert.rejects(mcpClient.callTool({name: 'posts_edit', arguments: {id: 'abc123', title: 'Changed'}}), /updated_at/);
-  await assert.rejects(mcpClient.callTool({name: 'members_browse', arguments: {limit: 'all'}}), /limit/);
+  await assert.rejects(mcpClient.callTool({name: 'members_browse', arguments: {limit: '15'}}), /limit/);
   assert.equal(requests.length, 0);
   await mcpClient.callTool({name: 'posts_add', arguments: {title: 'Example', custom_template: 'post'}});
   assert.deepEqual(requests[0].data, {posts: [{title: 'Example', custom_template: 'post'}]});
@@ -76,7 +76,7 @@ test('MCP parsing retains supported templates while non-slice member queries rem
   assert.deepEqual(requests[1].params, {page: 2, limit: 15, order: 'created_at desc', filter: 'status:free'});
 });
 
-test('MCP content reads require one selector while member email reads remain unchanged', async t => {
+test('MCP reads require one selector and encode member email paths', async t => {
   const {mcpClient, requests} = await harness(t);
   const absent = await mcpClient.callTool({name: 'posts_read', arguments: {}});
   assert.equal(absent.isError, true);
@@ -88,7 +88,7 @@ test('MCP content reads require one selector while member email reads remain unc
   await mcpClient.callTool({name: 'posts_read', arguments: {slug: 'example'}});
   assert.equal(requests[0].url, `${config.url}/ghost/api/admin/posts/slug/example/`);
   await mcpClient.callTool({name: 'members_read', arguments: {email: 'member@example.invalid'}});
-  assert.equal(requests[1].url, `${config.url}/ghost/api/admin/members/email/member@example.invalid/`);
+  assert.equal(requests[1].url, `${config.url}/ghost/api/admin/members/email/member%40example.invalid/`);
 });
 
 test('MCP content writes preserve HTML/Lexical, relationships, metadata and concurrency', async t => {

@@ -1,4 +1,5 @@
 import {inviteSchemas, roleSchemas} from '../schemas/staff';
+import {z} from 'zod';
 import {createNativeAdminRequest} from './nativeAdmin';
 import {readNativeCollection, readNativeEntity} from './nativeResponses';
 import type {CollectionResponse, EntityResponse, GhostClient, GhostConfig, GhostResult, QueryOptions, RequestExecutor} from './types';
@@ -13,7 +14,7 @@ export function createStaffClients(config: GhostConfig, makeRequest?: RequestExe
         const schema = operation === 'roles.browse' ? roleSchemas.browse
             : inviteSchemas[op as keyof typeof inviteSchemas];
         const parsed = schema.safeParse(input);
-        if (!parsed.success || (options && Object.keys(options).length)) throw new Error(`Invalid Ghost ${family} ${op} input.`);
+        if (!parsed.success || !z.object({}).strict().safeParse(options === undefined ? {} : options).success) throw new Error(`Invalid Ghost ${family} ${op} input.`);
         const fields: Record<string, unknown> = {...parsed.data};
         const id = typeof fields.id === 'string' ? fields.id : undefined;
         delete fields.id;

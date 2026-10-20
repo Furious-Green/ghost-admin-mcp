@@ -42,7 +42,7 @@ test('adapter forwards selectors, query options and paginated array metadata', a
   assert.equal(requests[1].url, `${config.url}/ghost/api/admin/posts/slug/example/`);
   assert.deepEqual(requests[1].params, {formats: 'html,lexical'});
   await client.members.read({email: 'member@example.invalid'});
-  assert.equal(requests[2].url, `${config.url}/ghost/api/admin/members/email/member@example.invalid/`);
+  assert.equal(requests[2].url, `${config.url}/ghost/api/admin/members/email/member%40example.invalid/`);
 });
 
 test('adapter preserves HTML source and concurrency on repeated edits with fresh input', async () => {

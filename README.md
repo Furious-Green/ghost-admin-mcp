@@ -13,8 +13,8 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 - Ghost Admin API requests with `@tryghost/admin-api` plus focused authenticated native adapters
 - Tools for posts, pages, members, users, tags, newsletter configuration, webhooks, tiers, offers, staff invites and roles
 - Native Ghost post/page copying, creating drafts without client-side reconstruction
-- Explicit Ghost query filters and pagination inputs, including `limit: "all"` for posts/pages/tags, tiers and invites
-- Strict posts/pages/tags inputs with resource-specific queries, nullable clearing and revision controls
+- Explicit Ghost query filters and resource-specific pagination, including supported `limit: "all"`
+- Strict tool inputs and typed-client validation with resource-specific queries, nullable clearing and revision controls
 - Consistent JSON `data`/optional `meta` envelopes, preserving server pagination and mutation metadata
 - MCP error signaling and unchanged plain-text delete confirmations
 - Offline request/registration contract tests, without Ghost credentials or live mutations
@@ -25,7 +25,8 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 
 - Tiers/offers/invites/roles use native adapters for twelve supported operations. Contracts are verified against documentation and Ghost 5.130.0 source, not a live server; permissions and version differences still apply.
 - Pagination is returned when Ghost supplies it; this server never invents pagination or automatically fetches additional pages. Available paging controls remain resource-specific.
-- Posts/pages/tags have repaired query/write schemas and strict validation (see migration below). Remaining-resource query/validation work is still [#6](https://github.com/Furious-Green/ghost-admin-mcp/issues/6); explicit newsletter delivery/opt-in controls remain [#7](https://github.com/Furious-Green/ghost-admin-mcp/issues/7). Newsletter configuration tools do not provide an explicit send workflow.
+- Both slices of [#6](https://github.com/Furious-Green/ghost-admin-mcp/issues/6) repair the exposed query/input schemas (see migrations below), not the full Admin API surface. Explicit email delivery/opt-in controls remain [#7](https://github.com/Furious-Green/ghost-admin-mcp/issues/7). Newsletter configuration tools do not provide an explicit send workflow.
+- `newsletters_delete` is still registered for compatibility but Ghost 5.130.0 has no matching delete endpoint. Strict input validation and SDK method availability do **not** make it a supported server operation. Archive with `newsletters_edit` / `status: "archived"` where appropriate; the removal/capability decision remains #7. No successful live deletion is claimed.
 - All seven MCP resource handlers return placeholder text, and the summarize-post prompt retains a limited HTML preview ([#11](https://github.com/Furious-Green/ghost-admin-mcp/issues/11)).
 - Available SDK methods do not prove that a Ghost version or credential permits an operation. Custom Integration keys have fixed restricted permissions; staff tokens act with the user's role. Never assume every key grants unrestricted admin access.
 
@@ -62,15 +63,15 @@ The original package advertised tiers/offers/invites/roles operations absent fro
 
 Archival is **not deletion**. Refresh MCP tool discovery after upgrading; removed names produce unknown-tool errors, with no aliases or silent archival. Tier archival is documented; active-only partial edits are verified against Ghost 5.130.0 source. Offer status (`active`/`archived`) is [source-verified in Ghost 5.130.0](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/server/services/offers/application/OffersAPI.js), but omitted from the public offer-update documentation. These contracts are not live-version guarantees.
 
-Tier-slug and offer-code read selectors are rejected, including when also supplying an ID. Browse/filter first, then pass the returned ID. `offers_browse` supports only `filter`, not legacy `page`/`limit`/`order`. Tier browse supports `filter`, `limit` (positive integer or `"all"`), `page`, `order`, `fields`, and `include`; read supports ID and include. Include values are comma-separated `monthly_price`, `yearly_price`, `benefits`. Pagination boundaries remain server-dependent: the reference tiers service synthesizes pagination metadata.
+Tier-slug and offer-code read selectors are rejected, including when also supplying an ID. Browse/filter first, then pass the returned ID. `offers_browse` supports only `filter`, not legacy `page`/`limit`/`order`. Tier browse accepts `filter`, `limit` (positive safe integer or `"all"`), `page`, `order`, and `fields`; read supports ID only. **Correction:** tier `include` is now rejected: it was advertised using Content API relationships, but these baseline Admin endpoints do not accept it. The reference tier service returns its whole filtered in-memory repository with synthetic one-page metadata, ignoring endpoint-accepted paging/order/field controls. Forwarding those controls does not promise effective server pagination/projection; no client-side emulation is added.
 
-`offers_add` retains the `tier_id` tool input, translated to native `tier:{id}`; `tier_id` is never sent to Ghost. Fixed offers require currency, repeating offers require positive integer `duration_in_months`; Ghost remains authoritative for discount/currency rules. Tier prices are nonnegative integer minor-unit amounts. Offer edits allow only name/code/display fields and status, not discount/tier/cadence/duration changes. Unsupported fields are rejected rather than discarded.
+`offers_add` retains the `tier_id` tool input, translated to native `tier:{id}`; `tier_id` is never sent to Ghost. Cadence is `month`/`year`, duration `once`/`repeating`/`forever`/`trial`, type `percent`/`fixed`/`trial`. Amounts are nonnegative safe integers, with percent at most 100. Fixed offers require currency, repeating offers require positive safe-integer `duration_in_months`; Ghost remains authoritative for discount/currency combinations. Tier visibility is `public`/`none`, prices nonnegative safe-integer minor-unit amounts. Tier description/welcome URL accept null; null pricing/currency/benefits are deliberately not exposed. Offer edits allow only name/code/display fields and status, not discount/tier/cadence/duration changes. Unsupported fields are rejected rather than discarded.
 
 `roles_browse` supports only optional `permissions: "assign"` (assignable roles), not legacy `filter`/`page`/`limit`/`order`. Offers and roles are unpaginated collections; no client-side pagination or role-read emulation is provided. `invites_browse` supports `filter`, `limit` (positive integer or `"all"`), `page`, `order`, and `fields`.
 
 **Staff permissions:** invites and roles are staff-management endpoints. Supply a staff access token with sufficient role permissions through the existing `GHOST_ADMIN_API_KEY` setting (same `id:secret` format), not a Custom Integration's fixed restricted permission set. Ghost enforces permissions; the client never infers credential class, auto-escalates or retries with another auth method. `invites_add` accepts `role_id` and a valid email address and **sends a real staff invitation email** when run against Ghost. Browse roles first to choose an assignable role. Delete removes an invitation, not an existing staff account.
 
-Executable and environment variable names, badges and MIT licensing are unchanged. **All data-returning tools now use the [response envelope below](#response-format-migration)**, including reads and copies; posts/pages/tags also have the [strict input migration](#strict-content-input-migration). Native requests refuse redirects, time out after 30 seconds and never retry; check Ghost before manually repeating a timed-out mutation. SDK transport policy is unchanged; these native safeguards are not a claim that the SDK transport has the same policy.
+Executable and environment variable names, badges and MIT licensing are unchanged. **All data-returning tools now use the [response envelope below](#response-format-migration)**, including reads and copies; see both [content](#strict-content-input-migration) and [remaining-resource](#strict-remaining-resource-input-migration) input migrations. Native requests refuse redirects, time out after 30 seconds and never retry; check Ghost before manually repeating a timed-out mutation. SDK transport policy is unchanged; these native safeguards are not a claim that the SDK transport has the same policy.
 
 ## Response format migration
 
@@ -105,7 +106,7 @@ const pagination = result.meta?.pagination;
 
 Metadata is retained as supplied by Ghost, including unknown keys and nested values. An absent `meta` is omitted, an empty object remains `{}`, and entity fields named `data` or `meta` remain inside the entity. Malformed resource/metadata responses are errors, not successful empty results. There is no compatibility flag, alternate tool name or bare-result fallback.
 
-**Paging remains explicit:** for resources supporting numeric paging, inspect `result.meta?.pagination.next` and supply that number in a separate `page` request, retaining your filter/order/limit. `next: null` is preserved. Each browse call requests one server response; there is no automatic paging. Missing pagination does **not** prove exhaustion or imply another page exists. Offers/roles are unpaginated collections, tiers pagination remains server-dependent, and `limit: "all"` is accepted only by resource-specific schemas (currently posts, pages, tags, tiers and invites).
+**Paging remains explicit:** for resources supporting numeric paging, inspect `result.meta?.pagination.next` and supply that number in a separate `page` request, retaining your filter/order/limit. `next: null` is preserved. Each browse call requests one server response; there is no automatic paging. Missing pagination does **not** prove exhaustion or imply another page exists. Offers/roles are unpaginated collections; see the tier pagination caveat above. `limit: "all"` is accepted by posts/pages/tags/members/users/newsletters/tiers/invites browse, not offers/roles; it can produce a large response and does not change Content API limits.
 
 **Newsletter metadata describes returned state, not requested state.** For example:
 
@@ -117,7 +118,7 @@ This reports pending verification, **not** an already-active new sender address.
 
 ## Strict content input migration
 
-**Breaking validation change, scoped to the 17 posts/pages/tags tools:** unknown keys now fail instead of disappearing, including unknown nested relationship fields and copy overrides. Read accepts **exactly one** nonblank `id` or `slug`; supplying both no longer silently picks the ID. IDs/slugs cannot contain traversal, path/query/fragment delimiters, percent escapes or control characters; spaces and Unicode are encoded as one path segment. Refresh MCP discovery and remove undeclared inputs before upgrading. All 46 tool names, `{data, meta?}` outputs and delete confirmations remain unchanged. Other resource schemas are not made globally strict by this repair.
+**Breaking validation change for the 17 posts/pages/tags tools:** unknown keys now fail instead of disappearing, including unknown nested relationship fields and copy overrides. Read accepts **exactly one** nonblank `id` or `slug`; supplying both no longer silently picks the ID. IDs/slugs cannot contain traversal, path/query/fragment delimiters, percent escapes or control characters; spaces and Unicode are encoded as one path segment. Refresh MCP discovery and remove undeclared inputs before upgrading. All 46 tool names, `{data, meta?}` outputs and delete confirmations remain unchanged. The second slice below extends strictness to the remaining tools.
 
 | Tools | Query controls |
 | --- | --- |
@@ -152,6 +153,39 @@ Edit timestamps must be valid date-times with a timezone (`Z` or offset). Read f
 ```
 
 API schema lengths/nullability and query options were checked against **Ghost 5.130.0**, including its pinned `@tryghost/admin-api-schema@4.5.10`, not just its database columns. `Accept-Version: v5.0` remains a minimum-version header, not a guarantee for every 5.x minor. Excluded here: generated/audit/database-only fields, experimental collections, custom `visibility_filter`, debug/internal transaction/conversion controls, post `show_title_and_feature_image`, and new email subject/delivery controls (#7). No arbitrary HTTP proxy or unknown-field escape hatch is added. Live version/permission compatibility remains unverified.
+
+## Strict remaining-resource input migration
+
+The second #6 slice makes members/users/newsletters/webhooks strict at both MCP and typed-client boundaries. Nested member label/newsletter objects are strict too. Native tiers/offers/invites/roles remain strict, now with safe-integer paging, tighter enums/ranges and malformed-options rejection. Unknown inputs have no passthrough. Refresh discovery; all **46 registered names**, output envelopes and delete text remain unchanged.
+
+| Resource | Browse queries | Read queries/selectors | Write queries |
+| --- | --- | --- | --- |
+| Members | filter, order, page, limit, fields, search, include | include; exactly one id/email | none |
+| Users | filter, order, page, limit, fields, include | include, fields, filter; exactly one id/slug/email | edit include |
+| Newsletters | filter, order, page, limit, fields, include | include, fields; exactly one id/slug | add/edit include |
+| Webhooks | no browse tool | no read tool | none |
+| Tiers | filter, order, page, limit, fields (server caveat above) | id only; no include | none |
+| Offers | filter only | id only | none |
+| Invites | filter, order, page, limit, fields | no read tool | none |
+| Roles | permissions=assign only | no read tool | none |
+
+Delete inputs are ID-only. `fields` is deliberately absent on member reads; no formats or save_revision on these resources. Includes are comma-separated supported values:
+
+- Members: `email_recipients`, `products`, `tiers`.
+- Users: `count.posts`, `permissions`, `roles`, `roles.permissions`.
+- Newsletters: `count.posts`, `count.members`, `count.active_members`.
+
+Nonblank query strings/CSV lists, positive safe-integer paging and the `"all"` support listed above are validated without coercion. ID/slug path rules match content. Email read selectors are valid <=191-character addresses and encoded once (including `+`, `%`, `@`); write emails stay literal body text. Caller values are not trimmed, lowercased or rewritten. Member/user read selectors cannot be combined. No new role/UUID read selectors are added.
+
+Typed SDK-backed resource methods accept supported query controls flat or in their separate options argument, rejecting duplicates. Native tiers/offers/invites/roles keep **flat query inputs only**; nonempty separate options are rejected. Null, arrays and primitives are not valid options objects. Query controls never become write fields; caller objects are not mutated.
+
+Existing member name/note fields remain non-null strings. Labels require a nonblank name and optional nullable slug; newsletter references require an ID. Unknown reference properties fail. `labels: []` / `newsletters: []` remain explicit replacement requests, not merges; Ghost governs their effects. No new comped, subscription, billing or bulk-member controls.
+
+Existing user bio/website/location/facebook/twitter fields accept null clearing; name/email/slug do not. Newsletter status is `active`/`archived`, font categories `serif`/`sans_serif`, alignment `left`/`center`, sort order a nonnegative safe integer. Nullable newsletter fields are description and, on edit, sender name/email, header image and footer content. Sender email may also be an empty string; sender reply-to must be `newsletter`, `support` or a valid email, never null. Boolean fields accept only booleans. Existing sender updates can trigger Ghost's verification emails; returned metadata is not proof that the requested sender is active.
+
+Webhook targets must be absolute HTTP(S) URLs; event is nonblank lowercase text, with supported events still validated by Ghost. Name/secret accept null, including secret on edit; integration ID remains add-only. This is input validation, not verification of delivery or a guarantee that a target is safe to contact. Never put secrets in issue reports or logs.
+
+The supported schema contract is source-verified against Ghost **5.130.0**, pinned API schemas and the relevant models/services, not a live instance. Null is forwarded as a clearing request; server transforms and permissions still apply. No new send-email/email-type, member-cancellation, newsletter opt-in-existing or internal/debug/transaction controls are exposed. Those effectful controls and the existing unsupported `newsletters_delete` capability decision remain #7; this repair does not add or remove those capabilities. Dependency advisories remain a separate release/adoption gate.
 
 ## Available Resources
 
@@ -229,7 +263,7 @@ Requests use native POST `/posts/{id}/copy/` and `/pages/{id}/copy/` with no bod
 - **Read Newsletter**: Retrieve a newsletter by ID.
 - **Add Newsletter**: Create a new newsletter.
 - **Edit Newsletter**: Update newsletter details.
-- **Delete Newsletter**: Remove a newsletter.
+- **Delete Newsletter**: Legacy registration; no matching Ghost 5.130.0 endpoint. Capability decision pending #7; do not assume deletion support.
 
 ### Offers
 - **Browse Offers**: List offers with optional filter (no pagination/order).

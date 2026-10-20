@@ -4,8 +4,8 @@ after(require('./helpers/networkGuard.cjs').blockNetwork());
 const {makeRecordingClient} = require('./helpers/recordingClient.cjs');
 const offer = {name: 'Sale', code: 'sale', cadence: 'month', duration: 'once', amount: 10, tier_id: 'tier1', type: 'percent'};
 const cases = [
-  ['tiers', 'browse', {filter: 'active:true', limit: 'all', page: 2, order: 'name asc', fields: 'id,name', include: 'benefits,monthly_price'}, 'GET', 'tiers/', undefined],
-  ['tiers', 'read', {id: 'one', include: 'yearly_price'}, 'GET', 'tiers/one/', undefined],
+  ['tiers', 'browse', {filter: 'active:true', limit: 'all', page: 2, order: 'name asc', fields: 'id,name'}, 'GET', 'tiers/', undefined],
+  ['tiers', 'read', {id: 'one'}, 'GET', 'tiers/one/', undefined],
   ['tiers', 'add', {name: 'Paid', monthly_price: 100, benefits: ['One']}, 'POST', 'tiers/', {tiers: [{name: 'Paid', monthly_price: 100, benefits: ['One']}]}],
   ['tiers', 'edit', {id: 'one', active: false}, 'PUT', 'tiers/one/', {tiers: [{active: false}]}],
   ['offers', 'browse', {filter: 'status:active'}, 'GET', 'offers/', undefined],
@@ -25,7 +25,7 @@ for (const [family, op, input, method, path, data] of cases) {
     assert.equal(request.url, `http://127.0.0.1:1/ghost/api/admin/${path}`);
     assert.equal(request.method, method);
     assert.deepEqual(request.data, data);
-    assert.deepEqual(request.params, op === 'browse' ? input : op === 'read' && family === 'tiers' ? {include: 'yearly_price'} : {});
+    assert.deepEqual(request.params, op === 'browse' ? input : {});
     assert.equal(request.headers['Accept-Version'], 'v5.0');
     assert.equal(request.headers['Content-Type'], data ? 'application/json' : undefined);
     assert.match(request.headers.Authorization, /^Ghost /);
