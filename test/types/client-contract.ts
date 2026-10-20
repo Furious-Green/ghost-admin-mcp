@@ -15,7 +15,7 @@ client.pages.edit({id: 'x'});
 // @ts-expect-error Pages expose no invented operations.
 client.pages.publish({id: 'x'});
 client.posts.read({id: 'x'});
-client.posts.read({}); // Current permissive selectors are retained until issue #6.
+client.posts.read({}); // Raw-shape optional selectors: exactly-one is enforced at runtime.
 client.posts.edit({id: 'x', updated_at: '2026-10-20T00:00:00.000Z'});
 // @ts-expect-error Edits require collision-detection timestamps.
 client.posts.edit({id: 'x'});
@@ -54,3 +54,15 @@ const bare: Promise<unknown[]> = client.posts.browse({});
 const wrongCollection: Promise<CollectionResponse> = client.posts.read({id: 'x'});
 // @ts-expect-error Delete cannot pretend to return entity data.
 const wrongDelete: Promise<EntityResponse> = client.posts.delete({id: 'x'});
+client.posts.edit({id: 'x', updated_at: '2026-10-21T00:00:00Z', custom_template: null, published_at: null, save_revision: false, tiers: []});
+client.pages.add({title: 'A', show_title_and_feature_image: false, mobiledoc: '{}'});
+client.tags.edit({id: 'x', feature_image: null, accent_color: null});
+client.posts.browse({limit: 'all', formats: 'html,plaintext'});
+// @ts-expect-error Pages cannot have sent status.
+client.pages.add({title: 'A', status: 'sent'});
+// @ts-expect-error Unknown post statuses cannot be written.
+client.posts.add({title: 'A', status: 'ready'});
+// @ts-expect-error Booleans do not accept null clearing.
+client.posts.edit({id: 'x', updated_at: '2026-10-21T00:00:00Z', featured: null});
+// @ts-expect-error Tags have no content formats.
+client.tags.browse({formats: 'html'});

@@ -79,7 +79,7 @@ for (const version of ['v5', 'v5.0', 'v6.0']) {
 test('copy rejects invalid resource and formats without HTTP', async () => {
   const {copy, requests} = recording();
   await assert.rejects(copy('members', {id: 'abc123'}), /Invalid Ghost copy resource/);
-  await assert.rejects(copy('pages', {id: 'abc123', formats: 'plaintext'}), /Invalid Ghost copy formats/);
+  await assert.rejects(copy('pages', {id: 'abc123', formats: 'unknown'}), /Invalid Ghost copy formats/);
   assert.equal(requests.length, 0);
 });
 
