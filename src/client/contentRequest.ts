@@ -12,13 +12,17 @@ const queryShapes = {posts: postQueryShapes, pages: pageQueryShapes, tags: tagQu
 export function prepareContentRequest(resource: Resource, operation: Operation, input: unknown, options?: QueryOptions): {input: Record<string, unknown>; query: QueryOptions} {
     const write = operation === 'add' || operation === 'edit';
     const queryShape: z.ZodRawShape = queryShapes[resource][operation];
-    const parsedOptions = z.object({...queryShape, ...(write && resource !== 'tags' ? {source: z.literal('html').optional()} : {})}).strict().parse(options ?? {});
+    const parsedOptions: Record<string, unknown> = z.object({...queryShape, ...(write && resource !== 'tags' ? {source: z.literal('html').optional()} : {})}).strict().parse(options ?? {});
     const {source, ...externalOptions} = parsedOptions;
     const parsed = z.object(shapes[resource][operation]).strict().parse(input) as Record<string, unknown>;
     for (const key of Object.keys(externalOptions)) {
         if (Object.hasOwn(parsed, key)) throw new Error(`Duplicate Ghost query option: ${key}`);
     }
-    const combined: Record<string, unknown> = {...parsed, ...externalOptions};
+    // Zod emits schema order; retain the caller's query order for SDK transport parity.
+    const combined: Record<string, unknown> = Object.fromEntries([
+        ...Object.keys(input as object).map(key => [key, parsed[key]]),
+        ...Object.keys(options ?? {}).filter(key => key !== 'source').map(key => [key, externalOptions[key]]),
+    ]);
     if (operation === 'read' && Number(combined.id !== undefined) + Number(combined.slug !== undefined) !== 1) {
         throw new Error(`Provide exactly one ${resource === 'pages' ? 'page' : resource === 'posts' ? 'post' : 'tag'} selector: id or slug.`);
     }

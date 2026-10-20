@@ -6,7 +6,7 @@ const {z} = require('zod');
 const {makeRecordingClient} = require('./helpers/recordingClient.cjs');
 const {config, timestamp, entity} = require('./helpers/fixtures.cjs');
 
-test('page schemas retain content fields without broadening posts', () => {
+test('content schemas retain writable fields and reject unknown properties when strict', () => {
   const pages = require('../build/tools/pages.js');
   const posts = require('../build/tools/posts.js');
   const content = {title: 'About', html: '<p>About</p>', lexical: '{"root":{}}', slug: 'about',
@@ -17,8 +17,9 @@ test('page schemas retain content fields without broadening posts', () => {
     twitter_description: 'Twitter desc', twitter_image: 'https://images.invalid/t.jpg',
     codeinjection_head: '<style></style>', codeinjection_foot: '<script></script>', canonical_url: 'https://example.invalid/about',
     tags: ['tag', {id: 'tag1', slug: 'tag', name: 'Tag'}], authors: ['a@example.invalid', {id: 'author1', slug: 'author', email: 'a@example.invalid'}]};
-  assert.deepEqual(z.object(pages.addParams).parse({...content, custom_template: 'about', email_only: true, unknown: true}), {...content, custom_template: 'about'});
-  assert.deepEqual(z.object(posts.addParams).parse({...content, email_only: true, custom_template: 'about', unknown: true}), {...content, email_only: true});
+  assert.throws(() => z.object(pages.addParams).strict().parse({...content, custom_template: 'about', email_only: true, unknown: true}));
+  assert.deepEqual(z.object(pages.addParams).strict().parse({...content, custom_template: 'about'}), {...content, custom_template: 'about'});
+  assert.deepEqual(z.object(posts.addParams).strict().parse({...content, email_only: true, custom_template: 'about'}), {...content, email_only: true, custom_template: 'about'});
   assert.equal(z.object(posts.editParams).safeParse({id: 'abc123'}).success, false);
   assert.equal(z.object(pages.editParams).safeParse({id: 'abc123'}).success, false);
   assert.equal(z.object(pages.editParams).safeParse({id: '', updated_at: timestamp}).success, false);
@@ -33,8 +34,8 @@ test('page queries validate pagination and formats', () => {
   }
   assert.deepEqual(schema.parse({page: 2, limit: 'all'}), {page: 2, limit: 'all'});
   assert.equal(schema.parse({limit: 15}).limit, 15);
-  for (const formats of ['html', 'lexical', 'html,lexical', 'lexical,html']) assert.equal(schema.parse({formats}).formats, formats);
-  for (const formats of ['plaintext', '']) assert.equal(schema.safeParse({formats}).success, false);
+  for (const formats of ['html', 'lexical', 'html,lexical', 'lexical,html', 'plaintext', 'mobiledoc']) assert.equal(schema.parse({formats}).formats, formats);
+  for (const formats of ['unknown', '']) assert.equal(schema.safeParse({formats}).success, false);
 });
 
 const cases = [
@@ -66,10 +67,10 @@ test('typed page client rejects traversal independently of MCP validation', asyn
   const {client, requests} = makeRecordingClient();
   for (const operation of ['read', 'edit', 'delete']) {
     for (const id of ['../posts/victim', '%2e%2e', 'a/b', 'a\\b', 'a?x=y', 'a#frag', '.', '..', 'a\n']) {
-      await assert.rejects(client.pages[operation]({id, updated_at: timestamp}), /Invalid Ghost page selector/);
+      await assert.rejects(client.pages[operation]({id, ...(operation === 'edit' ? {updated_at: timestamp} : {})}), /Invalid Ghost selector/);
     }
   }
-  await assert.rejects(client.pages.read({slug: '../posts/victim'}), /Invalid Ghost page selector/);
+  await assert.rejects(client.pages.read({slug: '../posts/victim'}), /Invalid Ghost selector/);
   assert.equal(requests.length, 0);
 });
 

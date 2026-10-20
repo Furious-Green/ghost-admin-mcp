@@ -65,31 +65,33 @@ test('MCP rejects missing/both page selectors before dispatch', async t => {
 });
 test('MCP validates page pagination, formats and edit timestamp before dispatch', async t => {
   const {call, requests} = await setup(t);
-  for (const args of [{page: 0}, {limit: -1}, {limit: 1.5}, {formats: 'plaintext'}]) {
+  for (const args of [{page: 0}, {limit: -1}, {limit: 1.5}, {formats: 'unknown'}]) {
     await assert.rejects(call('pages_browse', args), /Invalid arguments/);
   }
   await assert.rejects(call('pages_edit', {id: 'abc123'}), /updated_at/);
   await assert.rejects(call('pages_copy', {id: ''}), /Invalid arguments/);
-  await assert.rejects(call('posts_copy', {id: 'abc123', formats: 'plaintext'}), /Invalid arguments/);
+  await assert.rejects(call('posts_copy', {id: 'abc123', formats: 'unknown'}), /Invalid arguments/);
   for (const id of ['../abc', '%2e%2e', 'abc?other=1']) {
-    const output = await call('pages_copy', {id});
-    assert.equal(output.isError, true);
+    await assert.rejects(call('pages_copy', {id}), /Invalid arguments/);
   }
   assert.equal(requests.length, 0);
 });
-test('MCP page writes retain content metadata while removing post-only and unknown fields', async t => {
+test('MCP page writes reject post-only and unknown fields while retaining valid content', async t => {
   const {call, requests} = await setup(t);
   const content = {title: 'About', lexical: '{"root":{}}', custom_template: 'about', tags: ['About', {id: 'tag1'}], authors: ['author@example.invalid', {id: 'author1'}], feature_image: 'https://images.invalid/about.jpg', feature_image_alt: 'About', meta_title: 'SEO', meta_description: 'Description', published_at: timestamp};
-  await call('pages_add', {...content, email_only: true, newsletter: 'weekly', send: true, unknown: 'discard'});
+  await assert.rejects(call('pages_add', {...content, email_only: true, newsletter: 'weekly', send: true, unknown: 'discard'}), /Invalid arguments/);
+  assert.equal(requests.length, 0);
+  await call('pages_add', content);
   assert.deepEqual(requests[0].data, {pages: [content]});
   assert.deepEqual(requests[0].params, {});
-  await call('pages_edit', {...content, id: 'abc123', updated_at: timestamp, email_only: true});
+  await assert.rejects(call('pages_edit', {...content, id: 'abc123', updated_at: timestamp, email_only: true}), /Invalid arguments/);
+  await call('pages_edit', {...content, id: 'abc123', updated_at: timestamp});
   assert.deepEqual(requests[1].data, {pages: [{...content, updated_at: timestamp}]});
   assert.deepEqual(requests[1].params, {});
   await call('pages_add', {title: 'About', html: '<p>HTML</p>', lexical: '{"root":{}}'});
   assert.deepEqual(requests[2].params, {source: 'html'});
-  await call('posts_add', {title: 'Post', email_only: true, custom_template: 'discard'});
-  assert.deepEqual(requests[3].data, {posts: [{title: 'Post', email_only: true}]});
+  await call('posts_add', {title: 'Post', email_only: true, custom_template: 'post'});
+  assert.deepEqual(requests[3].data, {posts: [{title: 'Post', email_only: true, custom_template: 'post'}]});
 });
 test('pages browse preserves pagination metadata on empty/nonempty collections', async t => {
   const {call, enqueueResponse} = await setup(t);
@@ -122,10 +124,12 @@ for (const resource of ['posts', 'pages']) {
     });
   }
 }
-test('MCP copy ignores overrides and does not invent success on malformed responses', async t => {
+test('MCP copy rejects overrides and does not invent success on malformed responses', async t => {
   const {call, enqueueResponse, requests} = await setup(t);
   enqueueResponse({pages: [copied]});
-  await call('pages_copy', {id: 'abc123', title: 'override', status: 'published', html: '<p>Ignored</p>', newsletter: 'weekly'});
+  await assert.rejects(call('pages_copy', {id: 'abc123', title: 'override', status: 'published', html: '<p>Ignored</p>', newsletter: 'weekly'}), /Invalid arguments/);
+  assert.equal(requests.length, 0);
+  await call('pages_copy', {id: 'abc123'});
   assert.equal(requests[0].data, undefined);
   assert.deepEqual(requests[0].params, {});
   enqueueResponse({pages: []});

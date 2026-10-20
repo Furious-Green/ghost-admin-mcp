@@ -3,7 +3,7 @@ import {AsyncLocalStorage} from 'node:async_hooks';
 import {createNativeCopy} from './nativeCopy';
 import {createCommerceClients} from './commerceClient';
 import {createStaffClients} from './staffClient';
-import {encodePageSelector} from './pageSelector';
+import {prepareContentRequest} from './contentRequest';
 import {normalizeCollection, normalizeEntity} from './responses';
 import {createSdkRequestExecutor} from './sdkRequest';
 import type {CollectionResponse, EntityResponse, GhostClient, GhostConfig, OperationResult, QueryOptions, RequestExecutor} from './types';
@@ -42,16 +42,15 @@ export function createGhostClient(config: GhostConfig, options: {makeRequest?: R
                 throw new Error(`Unsupported Ghost SDK capability: ${resource}.${operation}`);
             }
             let sdkInput = input;
-            if (resource === 'pages' && ['read', 'edit', 'delete'].includes(operation) && isRecord(input)) {
-                sdkInput = {
-                    ...input,
-                    ...(input.id !== undefined ? {id: encodePageSelector(input.id)} : {}),
-                    ...(operation === 'read' && input.slug !== undefined ? {slug: encodePageSelector(input.slug)} : {}),
-                };
+            let sdkQuery = query;
+            if (resource === 'posts' || resource === 'pages' || resource === 'tags') {
+                const prepared = prepareContentRequest(resource, operation, input, query);
+                sdkInput = prepared.input;
+                sdkQuery = prepared.query;
             }
             const invocation: Invocation = {resource, operation};
             return invocations.run(invocation, async () => {
-                await Reflect.apply(fn, target, [sdkInput, query]);
+                await Reflect.apply(fn, target, [sdkInput, sdkQuery]);
                 if (operation === 'delete') return undefined as OperationResult<K>;
                 if (!invocation.result) throw new Error('Unexpected Ghost SDK response');
                 // The operation selected both normalization and this mapped return type.

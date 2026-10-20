@@ -65,29 +65,30 @@ for (const [family, operations] of Object.entries(families)) {
   }
 }
 
-test('MCP input parsing rejects missing timestamps/string limits and strips undeclared fields', async t => {
+test('MCP parsing retains supported templates while non-slice member queries remain unchanged', async t => {
   const {mcpClient, requests} = await harness(t);
   await assert.rejects(mcpClient.callTool({name: 'posts_edit', arguments: {id: 'abc123', title: 'Changed'}}), /updated_at/);
   await assert.rejects(mcpClient.callTool({name: 'members_browse', arguments: {limit: 'all'}}), /limit/);
   assert.equal(requests.length, 0);
-  await mcpClient.callTool({name: 'posts_add', arguments: {title: 'Example', custom_template: 'not-exposed'}});
-  assert.deepEqual(requests[0].data, {posts: [{title: 'Example'}]});
+  await mcpClient.callTool({name: 'posts_add', arguments: {title: 'Example', custom_template: 'post'}});
+  assert.deepEqual(requests[0].data, {posts: [{title: 'Example', custom_template: 'post'}]});
   await mcpClient.callTool({name: 'members_browse', arguments: {page: 2, limit: 15, order: 'created_at desc', filter: 'status:free'}});
   assert.deepEqual(requests[1].params, {page: 2, limit: 15, order: 'created_at desc', filter: 'status:free'});
 });
 
-test('MCP preserves current read selector behavior without claiming stronger validation', async t => {
+test('MCP content reads require one selector while member email reads remain unchanged', async t => {
   const {mcpClient, requests} = await harness(t);
   const absent = await mcpClient.callTool({name: 'posts_read', arguments: {}});
   assert.equal(absent.isError, true);
-  assert.match(absent.content[0].text, /Must include either data.id or data.slug or data.email/);
+  assert.match(absent.content[0].text, /exactly one post selector/);
   assert.equal(requests.length, 0);
-  await mcpClient.callTool({name: 'posts_read', arguments: {id: 'abc123', slug: 'ignored'}});
-  assert.equal(requests[0].url, `${config.url}/ghost/api/admin/posts/abc123/`);
+  const ambiguous = await mcpClient.callTool({name: 'posts_read', arguments: {id: 'abc123', slug: 'ignored'}});
+  assert.equal(ambiguous.isError, true);
+  assert.equal(requests.length, 0);
   await mcpClient.callTool({name: 'posts_read', arguments: {slug: 'example'}});
-  assert.equal(requests[1].url, `${config.url}/ghost/api/admin/posts/slug/example/`);
+  assert.equal(requests[0].url, `${config.url}/ghost/api/admin/posts/slug/example/`);
   await mcpClient.callTool({name: 'members_read', arguments: {email: 'member@example.invalid'}});
-  assert.equal(requests[2].url, `${config.url}/ghost/api/admin/members/email/member@example.invalid/`);
+  assert.equal(requests[1].url, `${config.url}/ghost/api/admin/members/email/member@example.invalid/`);
 });
 
 test('MCP content writes preserve HTML/Lexical, relationships, metadata and concurrency', async t => {

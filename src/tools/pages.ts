@@ -1,41 +1,10 @@
 import {z} from 'zod';
 import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js';
 import type {GhostClient} from '../client/types';
-import {encodePageSelector} from '../client/pageSelector';
-import {contentMutableFields, copyParams, formatsParam} from './contentSchemas';
+import {pageShapes} from '../schemas/content';
+import {registerStrictTool} from './registerStrictTool';
 
-const responseParams = {
-  include: z.string().optional(),
-  formats: formatsParam,
-};
-const pageSelector = z.string().refine(value => {
-  try { encodePageSelector(value); return true; }
-  catch { return false; }
-}, 'Invalid Ghost page selector');
-export const browseParams = {
-  filter: z.string().optional(),
-  order: z.string().optional(),
-  page: z.number().int().positive().optional(),
-  limit: z.union([z.number().int().positive(), z.literal('all')]).optional(),
-  fields: z.string().optional(),
-  ...responseParams,
-};
-export const readParams = {
-  id: pageSelector.optional(),
-  slug: pageSelector.optional(),
-  fields: z.string().optional(),
-  ...responseParams,
-};
-const pageMutableFields = {...contentMutableFields, custom_template: z.string().optional()};
-export const addParams = {title: z.string(), ...pageMutableFields, ...responseParams};
-export const editParams = {
-  id: pageSelector,
-  updated_at: z.string().min(1),
-  title: z.string().optional(),
-  ...pageMutableFields,
-  ...responseParams,
-};
-export const deleteParams = {id: pageSelector};
+export const {browse: browseParams, read: readParams, add: addParams, edit: editParams, delete: deleteParams} = pageShapes;
 export type ToolInputs = {
   browse: z.infer<z.ZodObject<typeof browseParams>>;
   read: z.infer<z.ZodObject<typeof readParams>>;
@@ -45,40 +14,35 @@ export type ToolInputs = {
 };
 
 export function registerPageTools(server: McpServer, client: GhostClient): void {
-  server.tool('pages_browse', browseParams, async args => ({
+  registerStrictTool(server, 'pages_browse', 'Browse pages with explicit query options.', browseParams, async args => ({
     content: [{type: 'text', text: JSON.stringify(await client.pages.browse(args), null, 2)}],
   }));
-  server.tool('pages_read', readParams, async args => {
+  registerStrictTool(server, 'pages_read', 'Read exactly one page by id or slug.', readParams, async args => {
     const {id, slug, ...query} = args;
-    if (Boolean(id) === Boolean(slug)) throw new Error('Provide exactly one page selector: id or slug.');
-    const page = await client.pages.read(id ? {id} : {slug}, query);
+    const page = await client.pages.read({...id !== undefined ? {id} : {}, ...slug !== undefined ? {slug} : {}}, query);
     return {content: [{type: 'text', text: JSON.stringify(page, null, 2)}]};
   });
-  server.tool('pages_add', addParams, async args => {
+  registerStrictTool(server, 'pages_add', 'Add a page with supported writable fields.', addParams, async args => {
     const {include, formats, ...entity} = args;
-    const options = {
-      ...(include !== undefined ? {include} : {}),
-      ...(formats !== undefined ? {formats} : {}),
+    const page = await client.pages.add(entity, {
+      ...(include !== undefined ? {include} : {}), ...(formats !== undefined ? {formats} : {}),
       ...(entity.html ? {source: 'html'} : {}),
-    };
-    const page = await client.pages.add(entity, options);
+    });
     return {content: [{type: 'text', text: JSON.stringify(page, null, 2)}]};
   });
-  server.tool('pages_edit', editParams, async args => {
-    const {include, formats, ...entity} = args;
-    const options = {
-      ...(include !== undefined ? {include} : {}),
-      ...(formats !== undefined ? {formats} : {}),
-      ...(entity.html ? {source: 'html'} : {}),
-    };
-    const page = await client.pages.edit(entity, options);
+  registerStrictTool(server, 'pages_edit', 'Edit a page using its current updated_at; optionally save a revision.', editParams, async args => {
+    const {include, formats, save_revision, ...entity} = args;
+    const page = await client.pages.edit(entity, {
+      ...(include !== undefined ? {include} : {}), ...(formats !== undefined ? {formats} : {}),
+      ...(save_revision !== undefined ? {save_revision} : {}), ...(entity.html ? {source: 'html'} : {}),
+    });
     return {content: [{type: 'text', text: JSON.stringify(page, null, 2)}]};
   });
-  server.tool('pages_delete', deleteParams, async args => {
+  registerStrictTool(server, 'pages_delete', 'Delete a page by id.', deleteParams, async args => {
     await client.pages.delete(args);
     return {content: [{type: 'text', text: `Page with id ${args.id} deleted.`}]};
   });
-  server.tool('pages_copy', copyParams, async args => ({
+  registerStrictTool(server, 'pages_copy', 'Copy a page as a new Ghost draft.', pageShapes.copy, async args => ({
     content: [{type: 'text', text: JSON.stringify(await client.pages.copy(args), null, 2)}],
   }));
 }
