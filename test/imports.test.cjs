@@ -16,7 +16,9 @@ function run(script) {
 test('tools and server construction do not load credentials, connect, or exit on import', () => {
   run(`
     const assert = require('node:assert/strict');
-    for (const module of ['config', 'ghostApi', 'client/sdkAdapter', 'client/nativeCopy', 'client/nativeRequest', 'tools/contentSchemas', 'prompts', 'resources',
+    for (const module of ['config', 'ghostApi', 'client/sdkAdapter', 'client/nativeCopy', 'client/nativeRequest',
+      'client/nativeAdmin', 'client/nativeResponses', 'client/commerceClient', 'client/staffClient',
+      'schemas/tiers', 'schemas/offers', 'schemas/staff', 'tools/registerStrictTool', 'tools/contentSchemas', 'prompts', 'resources',
       ...['posts','pages','members','users','tags','tiers','offers','newsletters','invites','roles','webhooks'].map(name => 'tools/' + name)]) {
       require('./build/' + module + '.js');
     }

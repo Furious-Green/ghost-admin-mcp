@@ -28,6 +28,76 @@ function client(url, executor) {
   return require('../build/client/sdkAdapter.js').createGhostClient({...config, url}, executor ? {makeRequest: executor} : {});
 }
 
+test('shared native core serializes JSON PUT and bodyless DELETE over actual HTTP', async t => {
+  const f = await fixture(t, (req, res) => req.method === 'DELETE' ? res.writeHead(204).end() : res.setHeader('Content-Type', 'application/json').end('{"tiers":[{"id":"one"}]}'));
+  const send = require('../build/client/nativeAdmin.js').createNativeAdminRequest({...config, url: f.url});
+  assert.deepEqual(await send('tiers.edit', {id: 'one', body: {tiers: [{active: false}]}}), {tiers: [{id: 'one'}]});
+  await send('invites.delete', {id: 'one'});
+  assert.equal(f.requests[0].body, '{"tiers":[{"active":false}]}');
+  assert.equal(f.requests[0].headers['content-type'], 'application/json');
+  assert.equal(f.requests[1].body, '');
+  assert.equal(f.requests[1].method, 'DELETE');
+});
+
+test('commerce HTTP serializes nested tier, confines Unicode edit IDs and never retries mutation failures', async t => {
+  const f = await fixture(t, (req, res) => {
+    if (req.method === 'POST') res.setHeader('Content-Type', 'application/json').end('{"offers":[{"id":"sale"}]}');
+    else res.writeHead(409, {'Content-Type': 'application/json'}).end(JSON.stringify({errors: [{type: 'ConflictError', message: config.key}]}));
+  });
+  const c = client(f.url + '/blog');
+  assert.deepEqual(await c.offers.add({name: 'Sale', code: 'sale', cadence: 'month', duration: 'once', amount: 10, tier_id: 'tier1', type: 'percent'}), {id: 'sale'});
+  assert.deepEqual(JSON.parse(f.requests[0].body).offers[0].tier, {id: 'tier1'});
+  assert.equal(JSON.parse(f.requests[0].body).offers[0].tier_id, undefined);
+  await assert.rejects(c.tiers.edit({id: 'café space', active: false}), {message: 'Ghost tiers edit failed (HTTP 409).'});
+  assert.equal(f.requests[1].url, '/blog/ghost/api/admin/tiers/caf%C3%A9%20space/');
+  assert.equal(f.requests[1].body, '{"tiers":[{"active":false}]}');
+  assert.equal(f.requests.length, 2);
+  await assert.rejects(c.tiers.edit({id: '../posts/x', active: false}), /Invalid Ghost/);
+  assert.equal(f.requests.length, 2);
+});
+
+test('staff HTTP sends only native invite JSON, deletes without body and forwards assignable-role query', async t => {
+  const f = await fixture(t, (req, res) => {
+    if (req.method === 'DELETE') res.writeHead(204).end();
+    else res.setHeader('Content-Type', 'application/json').end(req.url.startsWith('/ghost/api/admin/roles/') ? '{"roles":[{"id":"role1"}]}' : '{"invites":[{"id":"invite1"}]}');
+  });
+  const c = client(f.url);
+  assert.deepEqual(await c.invites.add({role_id: 'role1', email: 'staff@example.invalid'}), {id: 'invite1'});
+  assert.equal(await c.invites.delete({id: 'invite1'}), undefined);
+  assert.deepEqual(await c.roles.browse({permissions: 'assign'}), [{id: 'role1'}]);
+  assert.deepEqual(JSON.parse(f.requests[0].body), {invites: [{role_id: 'role1', email: 'staff@example.invalid'}]});
+  assert.equal(f.requests[0].headers['content-type'], 'application/json');
+  assert.equal(f.requests[1].url, '/ghost/api/admin/invites/invite1/');
+  assert.equal(f.requests[1].body, '');
+  assert.equal(f.requests[1].method, 'DELETE');
+  assert.equal(f.requests[2].url, '/ghost/api/admin/roles/?permissions=assign');
+  assert.equal(f.requests.length, 3);
+});
+
+test('staff HTTP permission failures discard echoed credentials and explain staff permissions', async t => {
+  const f = await fixture(t, (_req, res) => res.writeHead(403, {'Content-Type': 'application/json'}).end(JSON.stringify({errors: [{type: 'NoPermissionError', message: config.key}]})));
+  await assert.rejects(client(f.url).invites.add({role_id: 'role1', email: 'staff@example.invalid'}), e => {
+    assert.match(e.message, /staff access token with sufficient permissions/);
+    assert.equal(e.stack.includes(config.key), false);
+    assert.equal(e.config, undefined);
+    assert.equal(e.response, undefined);
+    return true;
+  });
+  assert.equal(f.requests.length, 1);
+});
+
+test('staff HTTP refuses redirects and does not repeat a timed-out invitation', async t => {
+  const target = await fixture(t, (_req, res) => res.end('{}'));
+  const source = await fixture(t, (_req, res) => res.writeHead(307, {Location: target.url}).end());
+  await assert.rejects(client(source.url).invites.add({role_id: 'role1', email: 'staff@example.invalid'}), /HTTP 307/);
+  assert.equal(source.requests.length, 1);
+  assert.equal(target.requests.length, 0);
+  const slow = await fixture(t, () => {});
+  const executor = require('../build/client/nativeRequest.js').createNativeRequestExecutor({timeoutMs: 50});
+  await assert.rejects(client(slow.url, executor).invites.add({role_id: 'role1', email: 'staff@example.invalid'}), /request failed/);
+  assert.equal(slow.requests.length, 1);
+});
+
 test('default HTTP copy sends authenticated POST with no body and preserves query/subdirectory', {timeout: 10000}, async t => {
   const f = await fixture(t, (_req, res) => res.setHeader('Content-Type', 'application/json').end(JSON.stringify({pages: [{id: 'copy1'}]})));
   assert.deepEqual(await client(f.url + '/blog').pages.copy({id: 'abc123', formats: 'html,lexical'}), {id: 'copy1'});

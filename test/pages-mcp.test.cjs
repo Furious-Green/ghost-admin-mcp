@@ -23,7 +23,7 @@ const cases = [
   {name: 'pages_copy', args: {id: 'abc123', formats: 'lexical'}, method: 'POST', path: 'abc123/copy/', query: {formats: 'lexical'}, data: undefined},
   {name: 'posts_copy', args: {id: 'abc123'}, method: 'POST', path: 'abc123/copy/', query: {}, data: undefined},
 ];
-test('MCP inventory retains all 42 tools and advertises exactly seven additions', async t => {
+test('MCP inventory retains supported original tools and exactly seven page/copy additions', async t => {
   const {mcpClient, requests} = await setup(t);
   const names = [];
   let cursor;
@@ -32,7 +32,7 @@ test('MCP inventory retains all 42 tools and advertises exactly seven additions'
     names.push(...page.tools.map(tool => tool.name));
     cursor = page.nextCursor;
   } while (cursor);
-  assert.equal(names.length, 49);
+  assert.equal(names.length, 46);
   assert.deepEqual(names.sort(), [...toolNames, ...additionalToolNames].sort());
   assert.equal(requests.length, 0);
 });

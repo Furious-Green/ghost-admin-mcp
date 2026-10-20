@@ -1,57 +1,11 @@
-// src/tools/roles.ts
-import { z } from "zod";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { GhostClient } from "../client/types";
+import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js';
+import type {GhostClient} from '../client/types';
+import {roleBrowseParams} from '../schemas/staff';
+import {registerStrictTool} from './registerStrictTool';
+export {roleBrowseParams as browseParams, type RoleInputs as ToolInputs} from '../schemas/staff';
 
-// Parameter schemas as ZodRawShape (object literals)
-export const browseParams = {
-  filter: z.string().optional(),
-  limit: z.number().optional(),
-  page: z.number().optional(),
-  order: z.string().optional(),
-};
-export const readParams = {
-  id: z.string().optional(),
-  name: z.string().optional(),
-};
-
-export type ToolInputs = {
-  browse: z.infer<z.ZodObject<typeof browseParams>>;
-  read: z.infer<z.ZodObject<typeof readParams>>;
-};
-
-export function registerRoleTools(server: McpServer, ghostApiClient: GhostClient) {
-  // Browse roles
-  server.tool(
-    "roles_browse",
-    browseParams,
-    async (args, _extra) => {
-      const roles = await ghostApiClient.roles.browse(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(roles, null, 2),
-          },
-        ],
-      };
-    }
-  );
-
-  // Read role
-  server.tool(
-    "roles_read",
-    readParams,
-    async (args, _extra) => {
-      const role = await ghostApiClient.roles.read(args);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(role, null, 2),
-          },
-        ],
-      };
-    }
-  );
+export function registerRoleTools(server: McpServer, client: GhostClient) {
+    registerStrictTool(server, 'roles_browse', 'Browse staff roles; permissions:assign lists assignable roles. Requires a staff access token with sufficient permissions; no pagination or role-read endpoint.', roleBrowseParams, async args => ({
+        content: [{type: 'text', text: JSON.stringify(await client.roles.browse(args), null, 2)}],
+    }));
 }

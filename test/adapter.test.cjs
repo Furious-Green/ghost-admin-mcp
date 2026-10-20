@@ -6,16 +6,11 @@ const {makeRecordingClient} = require('./helpers/recordingClient.cjs');
 const {config, families, backedFamilies, entity, pagination, timestamp, permissionError} = require('./helpers/fixtures.cjs');
 
 for (const [family, operations] of Object.entries(families)) {
+  // Native contracts are covered separately, not as SDK capabilities.
+  if (!backedFamilies.includes(family)) continue;
   for (const [operation, args] of Object.entries(operations)) {
-    test(`adapter ${family}.${operation}: ${backedFamilies.includes(family) ? 'maps real SDK request' : 'rejects unsupported capability without HTTP'}`, async () => {
+    test(`adapter ${family}.${operation}: maps real SDK request`, async () => {
       const recording = makeRecordingClient();
-      if (!backedFamilies.includes(family)) {
-        await assert.rejects(recording.client[family][operation](structuredClone(args)), {
-          message: `Unsupported Ghost SDK capability: ${family}.${operation}`,
-        });
-        assert.equal(recording.requests.length, 0);
-        return;
-      }
       recording.enqueueResponse(operation === 'delete' ? undefined : {[family]: [entity]});
       const result = await recording.client[family][operation](structuredClone(args));
       assert.equal(recording.requests.length, 1);

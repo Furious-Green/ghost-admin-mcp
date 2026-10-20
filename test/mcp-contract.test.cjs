@@ -26,7 +26,7 @@ async function allPages(list, property) {
 test('MCP discovery exposes the complete existing tool, template, resource and prompt surface', async t => {
   const {mcpClient, requests} = await harness(t);
   const tools = await allPages(params => mcpClient.listTools(params), 'tools');
-  assert.equal(tools.length, 49);
+  assert.equal(tools.length, 46);
   assert.deepEqual(tools.map(tool => tool.name).sort(), [...toolNames, ...additionalToolNames].sort());
   const templates = await allPages(params => mcpClient.listResourceTemplates(params), 'resourceTemplates');
   assert.deepEqual(templates.map(item => item.uriTemplate).sort(), ['member://{member_id}', 'newsletter://{newsletter_id}', 'offer://{offer_id}', 'post://{post_id}', 'tier://{tier_id}', 'user://{user_id}']);
@@ -38,17 +38,13 @@ test('MCP discovery exposes the complete existing tool, template, resource and p
 });
 
 for (const [family, operations] of Object.entries(families)) {
+  // Native dispatch is covered by commerce-mcp/staff-mcp.test.cjs.
+  if (!backedFamilies.includes(family)) continue;
   for (const [operation, args] of Object.entries(operations)) {
-    test(`MCP ${family}_${operation} ${backedFamilies.includes(family) ? 'dispatches to the SDK' : 'reports unsupported capability'}`, async t => {
+    test(`MCP ${family}_${operation} dispatches to the SDK`, async t => {
       const {mcpClient, requests, enqueueResponse} = await harness(t);
       enqueueResponse(operation === 'delete' ? '' : {[family]: [entity]});
       const output = await mcpClient.callTool({name: `${family}_${operation}`, arguments: structuredClone(args)});
-      if (!backedFamilies.includes(family)) {
-        assert.equal(output.isError, true);
-        assert.deepEqual(output.content, [{type: 'text', text: `Unsupported Ghost SDK capability: ${family}.${operation}`}]);
-        assert.equal(requests.length, 0);
-        return;
-      }
       assert.notEqual(output.isError, true);
       assert.equal(requests.length, 1);
       const request = requests[0];

@@ -10,8 +10,8 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 
 ## Features
 
-- Secure Ghost Admin API requests with `@tryghost/admin-api`
-- Tools for posts, pages, members, users, tags, newsletter configuration, and webhooks
+- Ghost Admin API requests with `@tryghost/admin-api` plus focused authenticated native adapters
+- Tools for posts, pages, members, users, tags, newsletter configuration, webhooks, tiers, offers, staff invites and roles
 - Native Ghost post/page copying, creating drafts without client-side reconstruction
 - Explicit Ghost query filters and pagination inputs (pages additionally accept `limit: "all"`)
 - JSON-formatted text responses and MCP error signaling
@@ -19,9 +19,9 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 
 ## Current limitations
 
-49 tools are registered, including all 42 original tool names, but registration is not proof of live API support:
+46 tools are registered; registration is not proof of live API support:
 
-- The 15 tiers/offers/invites/roles tools return explicit unsupported SDK capability errors; real adapters are tracked in [#3](https://github.com/Furious-Green/ghost-admin-mcp/issues/3).
+- Tiers/offers/invites/roles use native adapters for twelve supported operations. Contracts are verified against documentation and Ghost 5.130.0 source, not a live server; permissions and version differences still apply.
 - Browse output, including pages, currently drops pagination metadata, although page/limit inputs work ([#5](https://github.com/Furious-Green/ghost-admin-mcp/issues/5)).
 - Query/field coverage and explicit newsletter delivery options are incomplete ([#6](https://github.com/Furious-Green/ghost-admin-mcp/issues/6), [#7](https://github.com/Furious-Green/ghost-admin-mcp/issues/7)). Newsletter configuration tools do not provide an explicit send workflow.
 - All seven MCP resource handlers return placeholder text, and the summarize-post prompt retains a limited HTML preview ([#11](https://github.com/Furious-Green/ghost-admin-mcp/issues/11)).
@@ -48,6 +48,28 @@ Build a reviewed checkout of this fork with `npm ci` on Node 22. Configure your 
 }
 ```
 
+## Migrating from the original implementation
+
+The original package advertised tiers/offers/invites/roles operations absent from its Ghost SDK, so they failed before HTTP. This fork implements the twelve supported operations using native requests: tiers/offers browse/read/add/edit, invites browse/add/delete, and roles browse.
+
+| Removed tool | Explicit replacement |
+| --- | --- |
+| `tiers_delete` | `tiers_edit` with `{"id":"TIER_ID","active":false}` |
+| `offers_delete` | `offers_edit` with `{"id":"OFFER_ID","status":"archived"}` |
+| `roles_read` | `roles_browse`, then select the returned role by ID/name yourself |
+
+Archival is **not deletion**. Refresh MCP tool discovery after upgrading; removed names produce unknown-tool errors, with no aliases or silent archival. Tier archival is documented; active-only partial edits are verified against Ghost 5.130.0 source. Offer status (`active`/`archived`) is [source-verified in Ghost 5.130.0](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/server/services/offers/application/OffersAPI.js), but omitted from the public offer-update documentation. These contracts are not live-version guarantees.
+
+Tier-slug and offer-code read selectors are rejected, including when also supplying an ID. Browse/filter first, then pass the returned ID. `offers_browse` supports only `filter`, not legacy `page`/`limit`/`order`. Tier browse supports `filter`, `limit` (positive integer or `"all"`), `page`, `order`, `fields`, and `include`; read supports ID and include. Include values are comma-separated `monthly_price`, `yearly_price`, `benefits`. Pagination boundaries remain server-dependent: the reference tiers service synthesizes pagination metadata.
+
+`offers_add` retains the `tier_id` tool input, translated to native `tier:{id}`; `tier_id` is never sent to Ghost. Fixed offers require currency, repeating offers require positive integer `duration_in_months`; Ghost remains authoritative for discount/currency rules. Tier prices are nonnegative integer minor-unit amounts. Offer edits allow only name/code/display fields and status, not discount/tier/cadence/duration changes. Unsupported fields are rejected rather than discarded.
+
+`roles_browse` supports only optional `permissions: "assign"` (assignable roles), not legacy `filter`/`page`/`limit`/`order`. Offers and roles are unpaginated collections; no client-side pagination or role-read emulation is provided. `invites_browse` supports `filter`, `limit` (positive integer or `"all"`), `page`, `order`, and `fields`.
+
+**Staff permissions:** invites and roles are staff-management endpoints. Supply a staff access token with sufficient role permissions through the existing `GHOST_ADMIN_API_KEY` setting (same `id:secret` format), not a Custom Integration's fixed restricted permission set. Ghost enforces permissions; the client never infers credential class, auto-escalates or retries with another auth method. `invites_add` accepts `role_id` and a valid email address and **sends a real staff invitation email** when run against Ghost. Browse roles first to choose an assignable role. Delete removes an invitation, not an existing staff account.
+
+Other SDK CRUD, pages/copy, executable and environment variable names, badges and MIT licensing are unchanged. Native requests refuse redirects, time out after 30 seconds and never retry; check Ghost before manually repeating a timed-out mutation.
+
 ## Available Resources
 
 The following entity families have registered tool names (see the limitations above; the separately registered MCP resources are placeholders):
@@ -57,7 +79,7 @@ The following entity families have registered tool names (see the limitations ab
 - **Members**: Registered users and subscribers of your site.
 - **Newsletters**: Newsletter configuration, not an explicit email-send workflow.
 - **Offers**: Promotional offers and discounts for members.
-- **Invites**: Invitations for new users or staff to join your Ghost site.
+- **Invites**: Staff invitations, not member subscriptions.
 - **Roles**: User roles and permissions within the Ghost admin.
 - **Tags**: Organizational tags for posts and content.
 - **Tiers**: Subscription tiers and plans for members.
@@ -66,7 +88,7 @@ The following entity families have registered tool names (see the limitations ab
 
 ## Available Tools
 
-Below is an inventory of registered tool names, not a full API coverage guarantee. Tiers, offers, invites, and roles are currently unsupported by the SDK adapter. Permissions and Ghost version may restrict other operations too.
+Below is an inventory of the 46 registered tool names, not a full API coverage guarantee. Permissions and Ghost version may restrict operations.
 
 ### Posts
 - **Browse Posts**: List posts with optional filters, pagination, and ordering.
@@ -127,20 +149,18 @@ Requests use native POST `/posts/{id}/copy/` and `/pages/{id}/copy/` with no bod
 - **Delete Newsletter**: Remove a newsletter.
 
 ### Offers
-- **Browse Offers**: List offers.
+- **Browse Offers**: List offers with optional filter (no pagination/order).
 - **Read Offer**: Retrieve an offer by ID.
 - **Add Offer**: Create a new offer.
-- **Edit Offer**: Update offer details.
-- **Delete Offer**: Remove an offer.
+- **Edit Offer**: Update presentation fields or explicitly archive with `status: "archived"`.
 
 ### Invites
 - **Browse Invites**: List invites.
-- **Add Invite**: Create a new invite.
+- **Add Invite**: Send a new staff invitation email (staff permissions required).
 - **Delete Invite**: Remove an invite.
 
 ### Roles
-- **Browse Roles**: List roles.
-- **Read Role**: Retrieve a role by ID.
+- **Browse Roles**: List roles, optionally with `permissions: "assign"` (staff permissions required).
 
 ### Tags
 - **Browse Tags**: List tags.
@@ -153,8 +173,7 @@ Requests use native POST `/posts/{id}/copy/` and `/pages/{id}/copy/` with no bod
 - **Browse Tiers**: List tiers.
 - **Read Tier**: Retrieve a tier by ID.
 - **Add Tier**: Create a new tier.
-- **Edit Tier**: Update tier details.
-- **Delete Tier**: Remove a tier.
+- **Edit Tier**: Update tier details or explicitly archive with `active: false`.
 
 ### Users
 - **Browse Users**: List users.
@@ -172,7 +191,7 @@ Requests use native POST `/posts/{id}/copy/` and `/pages/{id}/copy/` with no bod
 
 ## Error Handling
 
-Failed tool calls return MCP errors. Unsupported SDK capabilities report the resource and operation explicitly. Startup failures are reported on stderr without dumping supplied configuration or credentials. There is no custom `GhostError` implementation.
+Failed tool calls return MCP errors. Native errors expose safe operation/status guidance, never server diagnostic bodies or request configuration; staff permission failures can suggest a sufficiently privileged staff token. Removed tools return unknown-tool errors. Startup failures are reported on stderr without dumping supplied configuration or credentials. There is no custom `GhostError` implementation.
 
 ## Development and verification
 
@@ -184,7 +203,7 @@ npm run typecheck
 npm test
 ```
 
-`npm test` builds the TypeScript code and runs Node's built-in test runner. It exercises the real Ghost SDK with a recording request transport, actual MCP input parsing/discovery over in-memory transports, and executable stdio discovery with dummy credentials and a rejecting loopback fixture. Native-copy tests independently verify JWT signatures and use the real Axios transport against loopback-only fixtures for empty bodies, redirects, errors, and timeouts. All other suites block outbound HTTP; no real Ghost key, live content mutation, or email send is required. A pure `createServer(client)` factory accepts a typed client without reading environment configuration or connecting stdio. Tests and fixtures are outside the distributed `build/` directory.
+`npm test` builds the TypeScript code and runs Node's built-in test runner. It exercises the real Ghost SDK with a recording request transport, actual MCP input parsing/discovery over in-memory transports, and executable stdio discovery with dummy credentials and a rejecting loopback fixture. Native-adapter tests independently verify JWT signatures and use the real Axios transport against loopback-only fixtures for JSON payloads, empty bodies, redirects, errors, and timeouts. All other suites block outbound HTTP; no real Ghost key, live content mutation, or email send is required. A pure `createServer(client)` factory accepts a typed client without reading environment configuration or connecting stdio. Tests and fixtures are outside the distributed `build/` directory.
 
 CI uses the committed dependency lockfile, Node 22, and read-only permissions; it needs no repository secrets. The workflow uses JSON syntax, which is valid YAML, so its policy can be checked without adding a YAML parser dependency.
 
