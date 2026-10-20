@@ -1,22 +1,22 @@
 // src/tools/tiers.ts
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ghostApiClient } from "../ghostApi";
+import type { GhostClient } from "../client/types";
 
 // Parameter schemas as ZodRawShape (object literals)
-const browseParams = {
+export const browseParams = {
   filter: z.string().optional(),
   limit: z.number().optional(),
   page: z.number().optional(),
   order: z.string().optional(),
   include: z.string().optional(),
 };
-const readParams = {
+export const readParams = {
   id: z.string().optional(),
   slug: z.string().optional(),
   include: z.string().optional(),
 };
-const addParams = {
+export const addParams = {
   name: z.string(),
   description: z.string().optional(),
   welcome_page_url: z.string().optional(),
@@ -27,7 +27,7 @@ const addParams = {
   benefits: z.array(z.string()).optional(),
   // Add more fields as needed
 };
-const editParams = {
+export const editParams = {
   id: z.string(),
   name: z.string().optional(),
   description: z.string().optional(),
@@ -39,11 +39,19 @@ const editParams = {
   benefits: z.array(z.string()).optional(),
   // Add more fields as needed
 };
-const deleteParams = {
+export const deleteParams = {
   id: z.string(),
 };
 
-export function registerTierTools(server: McpServer) {
+export type ToolInputs = {
+  browse: z.infer<z.ZodObject<typeof browseParams>>;
+  read: z.infer<z.ZodObject<typeof readParams>>;
+  add: z.infer<z.ZodObject<typeof addParams>>;
+  edit: z.infer<z.ZodObject<typeof editParams>>;
+  delete: z.infer<z.ZodObject<typeof deleteParams>>;
+};
+
+export function registerTierTools(server: McpServer, ghostApiClient: GhostClient) {
   // Browse tiers
   server.tool(
     "tiers_browse",

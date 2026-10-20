@@ -1,5 +1,4 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ghostApiClient } from './ghostApi';
 import { Post, User, Member, Tier, Offer, Newsletter } from './models'; // Import data models
 
 // Type definitions compatible with MCP SDK resource handler expectations

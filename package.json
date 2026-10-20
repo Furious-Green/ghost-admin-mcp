@@ -13,7 +13,8 @@
         "build": "tsc",
         "start": "node build/server.js",
         "prepare": "npm run build",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "npm run build && node --test test/*.test.cjs",
+        "typecheck": "tsc --noEmit && tsc -p tsconfig.test-types.json"
     },
     "publishConfig": {
         "access": "public"

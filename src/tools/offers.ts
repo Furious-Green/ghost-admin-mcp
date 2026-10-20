@@ -1,20 +1,20 @@
 // src/tools/offers.ts
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ghostApiClient } from "../ghostApi";
+import type { GhostClient } from "../client/types";
 
 // Parameter schemas as ZodRawShape (object literals)
-const browseParams = {
+export const browseParams = {
   filter: z.string().optional(),
   limit: z.number().optional(),
   page: z.number().optional(),
   order: z.string().optional(),
 };
-const readParams = {
+export const readParams = {
   id: z.string().optional(),
   code: z.string().optional(),
 };
-const addParams = {
+export const addParams = {
   name: z.string(),
   code: z.string(),
   cadence: z.string(),
@@ -28,7 +28,7 @@ const addParams = {
   currency: z.string().optional(),
   // Add more fields as needed
 };
-const editParams = {
+export const editParams = {
   id: z.string(),
   name: z.string().optional(),
   code: z.string().optional(),
@@ -36,11 +36,19 @@ const editParams = {
   display_description: z.string().optional(),
   // Only a subset of fields are editable per Ghost API docs
 };
-const deleteParams = {
+export const deleteParams = {
   id: z.string(),
 };
 
-export function registerOfferTools(server: McpServer) {
+export type ToolInputs = {
+  browse: z.infer<z.ZodObject<typeof browseParams>>;
+  read: z.infer<z.ZodObject<typeof readParams>>;
+  add: z.infer<z.ZodObject<typeof addParams>>;
+  edit: z.infer<z.ZodObject<typeof editParams>>;
+  delete: z.infer<z.ZodObject<typeof deleteParams>>;
+};
+
+export function registerOfferTools(server: McpServer, ghostApiClient: GhostClient) {
   // Browse offers
   server.tool(
     "offers_browse",
