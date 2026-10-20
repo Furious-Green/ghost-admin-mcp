@@ -28,6 +28,86 @@ function client(url, executor) {
   return require('../build/client/sdkAdapter.js').createGhostClient({...config, url}, executor ? {makeRequest: executor} : {});
 }
 
+test('SDK and native metadata survive decoded HTTP bodies through actual MCP calls', async t => {
+  const f = await fixture(t, (req, res) => {
+    const resource = req.url.split('/')[5];
+    const meta = resource === 'members' ? {pagination:{page:2,pages:2,limit:1,total:2,prev:1,next:null}}
+      : resource === 'newsletters' ? {sent_email_verification:['sender_email']} : {retained:{nested:null}};
+    res.setHeader('Content-Type','application/json').end(JSON.stringify({[resource]:[{id:'one',...(resource === 'newsletters' ? {sender_email:null} : {})}],meta}));
+  });
+  const m = await require('./helpers/mcpHarness.cjs').openMcpHarness(client(f.url + '/blog'));
+  t.after(m.close);
+  for (const [name, args, expected] of [
+    ['members_browse',{page:2,limit:1},{data:[{id:'one'}],meta:{pagination:{page:2,pages:2,limit:1,total:2,prev:1,next:null}}}],
+    ['newsletters_edit',{id:'one',sender_email:'new@example.invalid'},{data:{id:'one',sender_email:null},meta:{sent_email_verification:['sender_email']}}],
+    ['tiers_edit',{id:'one',active:false},{data:{id:'one'},meta:{retained:{nested:null}}}],
+    ['pages_copy',{id:'one'},{data:{id:'one'},meta:{retained:{nested:null}}}],
+  ]) {
+    const response = await m.mcpClient.callTool({name,arguments:args});
+    assert.notEqual(response.isError,true);
+    assert.deepEqual(JSON.parse(response.content[0].text),expected);
+  }
+  assert.equal(f.requests.length,4);
+  assert.equal(f.requests[0].url,'/blog/ghost/api/admin/members/?limit=1&page=2');
+  assert.equal(f.requests[1].url,'/blog/ghost/api/admin/newsletters/one/');
+  assert.deepEqual(JSON.parse(f.requests[1].body),{newsletters:[{sender_email:'new@example.invalid'}]});
+  assert.equal(f.requests[2].url,'/blog/ghost/api/admin/tiers/one/');
+  assert.equal(f.requests[2].body,'{"tiers":[{"active":false}]}');
+  assert.equal(f.requests[3].url,'/blog/ghost/api/admin/pages/one/copy/');
+  assert.equal(f.requests[3].body,'');
+  for (const request of f.requests) {
+    assert.match(request.headers.authorization,/^Ghost /);
+    assert.equal(request.headers['accept-version'],'v5.0');
+  }
+});
+
+test('explicit SDK executor preserves pinned default HTTP encoding body headers and redirect policy', async t => {
+  const f = await fixture(t, (_req,res) => res.setHeader('Content-Type','application/json').end('{"posts":[{"id":"one"}],"meta":{"example":true}}'));
+  const original = require('@tryghost/admin-api')({...config,url:f.url});
+  const migrated = client(f.url);
+  for (const c of [original,migrated]) {
+    await c.posts.browse({fields:'id,title',filter:'name:A B'});
+    await c.posts.edit({id:'one',title:'Changed',updated_at:'2026-10-20T00:00:00.000Z'});
+  }
+  assert.equal(f.requests[0].url,'/ghost/api/admin/posts/?fields=id%2Ctitle&filter=name%3AA%20B');
+  for (const [a,b] of [[f.requests[0],f.requests[2]],[f.requests[1],f.requests[3]]]) {
+    assert.equal(a.url,b.url);
+    assert.equal(a.method,b.method);
+    assert.equal(a.body,b.body);
+    const withoutToken = ({authorization,...headers}) => headers;
+    assert.deepEqual(withoutToken(a.headers),withoutToken(b.headers));
+    assert.match(b.headers.authorization,/^Ghost /);
+  }
+  assert.deepEqual(JSON.parse(f.requests[3].body),{posts:[{title:'Changed',updated_at:'2026-10-20T00:00:00.000Z'}]});
+
+  // SDK policy is characterized, not hardened in this metadata-only change.
+  const target = await fixture(t, (_req,res) => res.setHeader('Content-Type','application/json').end('{"posts":[{"id":"redirected"}]}'));
+  const source = await fixture(t, (_req,res) => res.writeHead(302,{Location:target.url+'/ghost/api/admin/posts/'}).end());
+  await require('@tryghost/admin-api')({...config,url:source.url}).posts.browse({});
+  assert.deepEqual(await client(source.url).posts.browse({}),{data:[{id:'redirected'}]});
+  assert.equal(source.requests.length,2);
+  assert.equal(target.requests.length,2);
+  for (const pair of [[source.requests[0],source.requests[1]],[target.requests[0],target.requests[1]]]) {
+    assert.equal(pair[0].url,pair[1].url);
+    assert.equal(pair[0].headers['user-agent'],pair[1].headers['user-agent']);
+    assert.equal(pair[0].headers['accept-version'],pair[1].headers['accept-version']);
+    assert.equal(Boolean(pair[0].headers.authorization),Boolean(pair[1].headers.authorization));
+  }
+});
+
+test('SDK HTTP failure retains SDK error conversion and never repeats a failed mutation', async t => {
+  const f = await fixture(t, (_req,res) => res.writeHead(403,{'Content-Type':'application/json'}).end('{"errors":[{"type":"NoPermissionError","message":"Permission denied"}]}'));
+  await assert.rejects(client(f.url).posts.add({title:'Example'}),e => {
+    assert.equal(e.message,'Permission denied');
+    assert.equal(e.name,'NoPermissionError');
+    assert.equal(e.request,undefined);
+    assert.equal(e.config,undefined);
+    assert.equal(e.response,undefined);
+    return true;
+  });
+  assert.equal(f.requests.length,1);
+});
+
 test('shared native core serializes JSON PUT and bodyless DELETE over actual HTTP', async t => {
   const f = await fixture(t, (req, res) => req.method === 'DELETE' ? res.writeHead(204).end() : res.setHeader('Content-Type', 'application/json').end('{"tiers":[{"id":"one"}]}'));
   const send = require('../build/client/nativeAdmin.js').createNativeAdminRequest({...config, url: f.url});

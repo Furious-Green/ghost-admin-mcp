@@ -14,7 +14,8 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 - Tools for posts, pages, members, users, tags, newsletter configuration, webhooks, tiers, offers, staff invites and roles
 - Native Ghost post/page copying, creating drafts without client-side reconstruction
 - Explicit Ghost query filters and pagination inputs (pages additionally accept `limit: "all"`)
-- JSON-formatted text responses and MCP error signaling
+- Consistent JSON `data`/optional `meta` envelopes, preserving server pagination and mutation metadata
+- MCP error signaling and unchanged plain-text delete confirmations
 - Offline request/registration contract tests, without Ghost credentials or live mutations
 
 ## Current limitations
@@ -22,7 +23,7 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 46 tools are registered; registration is not proof of live API support:
 
 - Tiers/offers/invites/roles use native adapters for twelve supported operations. Contracts are verified against documentation and Ghost 5.130.0 source, not a live server; permissions and version differences still apply.
-- Browse output, including pages, currently drops pagination metadata, although page/limit inputs work ([#5](https://github.com/Furious-Green/ghost-admin-mcp/issues/5)).
+- Pagination is returned when Ghost supplies it; this server never invents pagination or automatically fetches additional pages. Available paging controls remain resource-specific.
 - Query/field coverage and explicit newsletter delivery options are incomplete ([#6](https://github.com/Furious-Green/ghost-admin-mcp/issues/6), [#7](https://github.com/Furious-Green/ghost-admin-mcp/issues/7)). Newsletter configuration tools do not provide an explicit send workflow.
 - All seven MCP resource handlers return placeholder text, and the summarize-post prompt retains a limited HTML preview ([#11](https://github.com/Furious-Green/ghost-admin-mcp/issues/11)).
 - Available SDK methods do not prove that a Ghost version or credential permits an operation. Custom Integration keys have fixed restricted permissions; staff tokens act with the user's role. Never assume every key grants unrestricted admin access.
@@ -68,7 +69,50 @@ Tier-slug and offer-code read selectors are rejected, including when also supply
 
 **Staff permissions:** invites and roles are staff-management endpoints. Supply a staff access token with sufficient role permissions through the existing `GHOST_ADMIN_API_KEY` setting (same `id:secret` format), not a Custom Integration's fixed restricted permission set. Ghost enforces permissions; the client never infers credential class, auto-escalates or retries with another auth method. `invites_add` accepts `role_id` and a valid email address and **sends a real staff invitation email** when run against Ghost. Browse roles first to choose an assignable role. Delete removes an invitation, not an existing staff account.
 
-Other SDK CRUD, pages/copy, executable and environment variable names, badges and MIT licensing are unchanged. Native requests refuse redirects, time out after 30 seconds and never retry; check Ghost before manually repeating a timed-out mutation.
+Request semantics for other SDK CRUD and pages/copy, executable and environment variable names, badges and MIT licensing are unchanged. **All data-returning tools now use the [response envelope below](#response-format-migration)**, including reads and copies. Native requests refuse redirects, time out after 30 seconds and never retry; check Ghost before manually repeating a timed-out mutation. SDK transport policy is unchanged; these native safeguards are not a claim that the SDK transport has the same policy.
+
+## Response format migration
+
+**Breaking output change:** browse/read/add/edit/copy return JSON text containing `{data, meta?}`. The outer MCP response is still `content: [{type: "text", text: "...JSON..."}]`, not a new protocol envelope. Tool names, inputs, executable/settings and MCP error signaling are unchanged. Delete tools keep their existing plain-text confirmations (for example, `Post with id abc123 deleted.`).
+
+Previously, browse text was usually a bare array and lost pagination metadata; SDK singletons could even become bare entities when metadata was absent:
+
+```json
+[{"id":"one"}]
+```
+
+Now browse `data` is always an array, even for zero or one records:
+
+```json
+{"data":[{"id":"one"}],"meta":{"pagination":{"page":1,"pages":2,"limit":1,"total":2,"prev":null,"next":2}}}
+```
+
+Previously, an entity result could be `{"id":"one"}`. Read/add/edit/copy now consistently return one entity inside `data`, even when metadata accompanies it:
+
+```json
+{"data":{"id":"one"}}
+```
+
+Update consumers to unwrap once:
+
+```js
+const result = JSON.parse(toolResponse.content[0].text); // after checking for MCP errors
+const records = result.data; // browse: array; read/add/edit/copy: one entity
+const pagination = result.meta?.pagination;
+// For an entity response: result.data.id, not result.id.
+```
+
+Metadata is retained as supplied by Ghost, including unknown keys and nested values. An absent `meta` is omitted, an empty object remains `{}`, and entity fields named `data` or `meta` remain inside the entity. Malformed resource/metadata responses are errors, not successful empty results. There is no compatibility flag, alternate tool name or bare-result fallback.
+
+**Paging remains explicit:** for resources supporting numeric paging, inspect `result.meta?.pagination.next` and supply that number in a separate `page` request, retaining your filter/order/limit. `next: null` is preserved. Each browse call requests one server response; there is no automatic paging. Missing pagination does **not** prove exhaustion or imply another page exists. Offers/roles are unpaginated collections, tiers pagination remains server-dependent, and `limit: "all"` is accepted only by the existing resource-specific schemas (currently pages, tiers and invites).
+
+**Newsletter metadata describes returned state, not requested state.** For example:
+
+```json
+{"data":{"id":"newsletter1","sender_email":null},"meta":{"sent_email_verification":["sender_email"]}}
+```
+
+This reports pending verification, **not** an already-active new sender address. The returned `sender_email` stays unchanged until verification. Opt-in counts are preserved when Ghost returns them, without interpreting or fabricating them; new opt-in and delivery controls remain [#7](https://github.com/Furious-Green/ghost-admin-mcp/issues/7). Private consumers must explicitly adapt to this response change before separately approved adoption.
 
 ## Available Resources
 
@@ -122,7 +166,7 @@ These are MCP tool-call names and arguments, not direct HTTP request bodies:
 {"name":"pages_edit","arguments":{"id":"PAGE_ID_FROM_READ","updated_at":"TIMESTAMP_FROM_READ","lexical":"{\"root\":{\"children\":[],\"direction\":null,\"format\":\"\",\"indent\":0,\"type\":\"root\",\"version\":1}}"}}
 ```
 
-`include`/`fields` are comma-separated query strings. `formats` accepts `html`, `lexical`, `html,lexical`, or `lexical,html`. Include/formats are never written into content. Nonempty HTML uses Ghost's `source=html` conversion (also taking precedence if Lexical is supplied); Lexical-only writes do not. Page tools do not expose newsletter or email-only options. Read the current page first and pass its exact `updated_at` into edits; conflicts are not retried.
+`include`/`fields` are comma-separated query strings. `formats` accepts `html`, `lexical`, `html,lexical`, or `lexical,html`. Include/formats are never written into content. Nonempty HTML uses Ghost's `source=html` conversion (also taking precedence if Lexical is supplied); Lexical-only writes do not. Page tools do not expose newsletter or email-only options. Read the current page first and pass its exact `data.updated_at` into edits; conflicts are not retried.
 
 #### Native copy behavior
 
@@ -130,7 +174,7 @@ These are MCP tool-call names and arguments, not direct HTTP request bodies:
 {"name":"pages_copy","arguments":{"id":"PAGE_ID_FROM_READ","formats":"lexical"}}
 ```
 
-Both copy tools require an ID and accept optional `formats`, with no content/title/status overrides or email-send options. They return the new entity from Ghost. In the source-verified Ghost 5.130.0 implementation, copying creates a new draft titled `<original title> (Copy)` and carries Ghost's selected fields/relationships—not necessarily every field. Edit the returned draft separately if needed. The current key must have add permission; a rejected copy is never simulated by reading and creating content.
+Both copy tools require an ID and accept optional `formats`, with no content/title/status overrides or email-send options. They return the new entity from Ghost inside `data`, plus response `meta` when supplied. In the source-verified Ghost 5.130.0 implementation, copying creates a new draft titled `<original title> (Copy)` and carries Ghost's selected fields/relationships—not necessarily every field. Edit the returned draft separately if needed. The current key must have add permission; a rejected copy is never simulated by reading and creating content.
 
 Requests use native POST `/posts/{id}/copy/` and `/pages/{id}/copy/` with no body. Copy refuses redirects and has a 30-second timeout with no automatic retries: after a timeout, check Ghost before retrying manually, because the original request may have created a draft. Native copy uses the same configured key and minimum-version header as CRUD (numeric `v5` or newer; `v5` normalizes to `v5.0`). Reference routes and behavior were verified against [Ghost 5.130.0 source](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/server/web/api/endpoints/admin/routes.js) and [official pages docs](https://docs.ghost.org/admin-api/pages/overview), not a live server. `Accept-Version: v5.0` specifies a minimum API version; it does not establish compatibility with every Ghost 5 minor or version.
 
@@ -203,7 +247,7 @@ npm run typecheck
 npm test
 ```
 
-`npm test` builds the TypeScript code and runs Node's built-in test runner. It exercises the real Ghost SDK with a recording request transport, actual MCP input parsing/discovery over in-memory transports, and executable stdio discovery with dummy credentials and a rejecting loopback fixture. Native-adapter tests independently verify JWT signatures and use the real Axios transport against loopback-only fixtures for JSON payloads, empty bodies, redirects, errors, and timeouts. All other suites block outbound HTTP; no real Ghost key, live content mutation, or email send is required. A pure `createServer(client)` factory accepts a typed client without reading environment configuration or connecting stdio. Tests and fixtures are outside the distributed `build/` directory.
+`npm test` builds the TypeScript code and runs Node's built-in test runner. It exercises the real Ghost SDK with a recording request transport, actual MCP input parsing/discovery over in-memory transports, and executable stdio discovery with dummy credentials and a rejecting loopback fixture. Response tests cover every data/delete tool, explicit paging, pending newsletter metadata, malformed replies, and out-of-order same-resource calls. Native-adapter tests independently verify JWT signatures; real Axios loopback fixtures check SDK transport parity and native JSON payloads, empty bodies, redirects, errors, and timeouts. All other suites block outbound HTTP; no real Ghost key, live content mutation, or email send is required. A pure `createServer(client)` factory accepts a typed client without reading environment configuration or connecting stdio. Tests and fixtures are outside the distributed `build/` directory.
 
 CI uses the committed dependency lockfile, Node 22, and read-only permissions; it needs no repository secrets. The workflow uses JSON syntax, which is valid YAML, so its policy can be checked without adding a YAML parser dependency.
 
