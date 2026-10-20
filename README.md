@@ -21,12 +21,12 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 
 ## Current limitations
 
-46 tools are registered; registration is not proof of live API support:
+45 tools are registered; registration is not proof of live API support:
 
 - Tiers/offers/invites/roles use native adapters for twelve supported operations. Contracts are verified against documentation and Ghost 5.130.0 source, not a live server; permissions and version differences still apply.
 - Pagination is returned when Ghost supplies it; this server never invents pagination or automatically fetches additional pages. Available paging controls remain resource-specific.
 - Both slices of [#6](https://github.com/Furious-Green/ghost-admin-mcp/issues/6) repair the exposed query/input schemas (see migrations below), not the full Admin API surface. Explicit email delivery/opt-in controls remain [#7](https://github.com/Furious-Green/ghost-admin-mcp/issues/7). Newsletter configuration tools do not provide an explicit send workflow.
-- `newsletters_delete` is still registered for compatibility but Ghost 5.130.0 has no matching delete endpoint. Strict input validation and SDK method availability do **not** make it a supported server operation. Archive with `newsletters_edit` / `status: "archived"` where appropriate; the removal/capability decision remains #7. No successful live deletion is claimed.
+- `newsletters_delete` and the direct client's newsletter delete method have been removed: Ghost 5.130.0 has no matching endpoint. There is no alias or automatic archive. Explicitly use `newsletters_edit` / `status: "archived"` where appropriate.
 - All seven MCP resource handlers return placeholder text, and the summarize-post prompt retains a limited HTML preview ([#11](https://github.com/Furious-Green/ghost-admin-mcp/issues/11)).
 - Available SDK methods do not prove that a Ghost version or credential permits an operation. Custom Integration keys have fixed restricted permissions; staff tokens act with the user's role. Never assume every key grants unrestricted admin access.
 
@@ -118,7 +118,7 @@ This reports pending verification, **not** an already-active new sender address.
 
 ## Strict content input migration
 
-**Breaking validation change for the 17 posts/pages/tags tools:** unknown keys now fail instead of disappearing, including unknown nested relationship fields and copy overrides. Read accepts **exactly one** nonblank `id` or `slug`; supplying both no longer silently picks the ID. IDs/slugs cannot contain traversal, path/query/fragment delimiters, percent escapes or control characters; spaces and Unicode are encoded as one path segment. Refresh MCP discovery and remove undeclared inputs before upgrading. All 46 tool names, `{data, meta?}` outputs and delete confirmations remain unchanged. The second slice below extends strictness to the remaining tools.
+**Breaking validation change for the 17 posts/pages/tags tools:** unknown keys now fail instead of disappearing, including unknown nested relationship fields and copy overrides. Read accepts **exactly one** nonblank `id` or `slug`; supplying both no longer silently picks the ID. IDs/slugs cannot contain traversal, path/query/fragment delimiters, percent escapes or control characters; spaces and Unicode are encoded as one path segment. Refresh MCP discovery and remove undeclared inputs before upgrading. Output envelopes and remaining delete confirmations are unchanged; see newsletter-delete removal above. The second slice below extends strictness to the remaining tools.
 
 | Tools | Query controls |
 | --- | --- |
@@ -156,7 +156,7 @@ API schema lengths/nullability and query options were checked against **Ghost 5.
 
 ## Strict remaining-resource input migration
 
-The second #6 slice makes members/users/newsletters/webhooks strict at both MCP and typed-client boundaries. Nested member label/newsletter objects are strict too. Native tiers/offers/invites/roles remain strict, now with safe-integer paging, tighter enums/ranges and malformed-options rejection. Unknown inputs have no passthrough. Refresh discovery; all **46 registered names**, output envelopes and delete text remain unchanged.
+The second #6 slice makes members/users/newsletters/webhooks strict at both MCP and typed-client boundaries. Nested member label/newsletter objects are strict too. Native tiers/offers/invites/roles remain strict, now with safe-integer paging, tighter enums/ranges and malformed-options rejection. Unknown inputs have no passthrough. Refresh discovery; output envelopes and remaining delete text are unchanged. The current inventory is **45 names** after removing unsupported newsletter deletion.
 
 | Resource | Browse queries | Read queries/selectors | Write queries |
 | --- | --- | --- | --- |
@@ -181,11 +181,74 @@ Typed SDK-backed resource methods accept supported query controls flat or in the
 
 Existing member name/note fields remain non-null strings. Labels require a nonblank name and optional nullable slug; newsletter references require an ID. Unknown reference properties fail. `labels: []` / `newsletters: []` remain explicit replacement requests, not merges; Ghost governs their effects. No new comped, subscription, billing or bulk-member controls.
 
-Existing user bio/website/location/facebook/twitter fields accept null clearing; name/email/slug do not. Newsletter status is `active`/`archived`, font categories `serif`/`sans_serif`, alignment `left`/`center`, sort order a nonnegative safe integer. Nullable newsletter fields are description and, on edit, sender name/email, header image and footer content. Sender email may also be an empty string; sender reply-to must be `newsletter`, `support` or a valid email, never null. Boolean fields accept only booleans. Existing sender updates can trigger Ghost's verification emails; returned metadata is not proof that the requested sender is active.
+Existing user bio/website/location/facebook/twitter fields accept null clearing; name/email/slug do not. Newsletter status is `active`/`archived`, font categories `serif`/`sans_serif`, alignment `left`/`center`, sort order an edit-only nonnegative safe integer. Creation and editing accept slug, sender name/email, header image and footer content. Description, sender name/email, header image and footer content are nullable. Sender email may also be an empty string; sender reply-to must be `newsletter`, `support` or a valid email, never null. Boolean fields accept only booleans. Sender settings can trigger Ghost's verification emails; returned metadata is not proof that the requested sender is active.
 
 Webhook targets must be absolute HTTP(S) URLs; event is nonblank lowercase text, with supported events still validated by Ghost. Name/secret accept null, including secret on edit; integration ID remains add-only. This is input validation, not verification of delivery or a guarantee that a target is safe to contact. Never put secrets in issue reports or logs.
 
-The supported schema contract is source-verified against Ghost **5.130.0**, pinned API schemas and the relevant models/services, not a live instance. Null is forwarded as a clearing request; server transforms and permissions still apply. No new send-email/email-type, member-cancellation, newsletter opt-in-existing or internal/debug/transaction controls are exposed. Those effectful controls and the existing unsupported `newsletters_delete` capability decision remain #7; this repair does not add or remove those capabilities. Dependency advisories remain a separate release/adoption gate.
+The supported schema contract is source-verified against Ghost **5.130.0**, pinned API schemas and the relevant models/services, not a live instance. Null is forwarded as a clearing request; server transforms and permissions still apply. Member-cancellation and internal/debug/transaction controls are not exposed. Explicit newsletter delivery and opt-in controls are described below. Dependency advisories remain a separate release/adoption gate.
+
+### Explicit newsletter delivery and administration
+
+**WARNING: these writes can email real people.** Tests use mocks/loopback only.
+The pinned MCP SDK has no annotations API; tool descriptions expose these side
+effects. No automatic send retry, newsletter selection or recipient inference is
+performed. Permissions, active newsletter existence, valid member NQL, scheduling
+timing and post/email state transitions remain Ghost's responsibility. A successful
+write is not proof of delivery: inspect returned `data.status`, email relationships
+and metadata. Failed/pending states are returned unchanged.
+
+Delivery is **edit-only**. Create a draft, read it, then use the exact current
+`data.updated_at` (replace the example timestamp) to publish:
+
+```json
+{"title":"Weekly update","status":"draft","html":"<p>Hello</p>"}
+```
+
+Pass that to `posts_add`, then `posts_read` with `{"id":"POST_ID","include":"email,newsletter"}`.
+Publish with `posts_edit`:
+
+```json
+{"id":"POST_ID","updated_at":"2026-10-21T00:00:00.000Z","status":"published","newsletter":"weekly","email_segment":"status:free","email_subject":"Your weekly update"}
+```
+
+Or schedule an email-only post with `posts_edit` and an explicit future timestamp:
+
+```json
+{"id":"POST_ID","updated_at":"2026-10-21T00:00:00.000Z","status":"scheduled","published_at":"2027-01-15T12:00:00+01:00","email_only":true,"newsletter":"weekly"}
+```
+
+`newsletter` is an **active newsletter slug**, not an ID. `email_segment` is
+member NQL (or `all`), not a replacement subscriber list; it requires newsletter.
+Omitting it leaves Ghost's documented default **all subscribed recipients**.
+Both controls are query parameters, never post body fields, and are rejected on
+create/read/browse/copy/delete and pages. A newsletter requires explicit
+published/scheduled status; scheduled delivery requires non-null `published_at`.
+Explicit `email_only:true` publishing/scheduling requires newsletter, so create
+email-only drafts first. Nullable `email_subject` (max 300) and `email_only` alone
+are configuration, not send requests. Delivered email-only posts have status `sent`.
+
+Ghost only applies delivery routing on qualifying state transitions without an
+existing newsletter association; these options do not guarantee a new send or
+recipient change. Stored newsletter/email state can send on later publishing even
+without new delivery options. Read first. On conflict, reread before deciding
+what to do; on timeout/error, inspect server state rather than blindly retrying,
+reverting or republishing. The adapter never retries these mutations.
+
+`newsletters_add` accepts creation-only boolean `opt_in_existing`. Omitted stays
+omitted, false stays false; true subscribes existing members already subscribed
+to at least one active newsletter. It is not a content send or arbitrary member
+import. Example: `{"name":"Weekly","slug":"weekly","opt_in_existing":false}`.
+Create/edit sender settings may trigger real **verification emails**. Preserve
+the returned entity as authoritative: `meta.sent_email_verification` indicates
+pending verification, not that the requested sender is active. Unknown/combined
+metadata and `opted_in_member_count:0` are retained; absent meta is not invented.
+There is no verification-token tool. Archive explicitly with
+`newsletters_edit` / `{"id":"NEWSLETTER_ID","status":"archived"}`; the removed
+`newsletters_delete` name now fails as unknown and never silently archives.
+
+These contracts use Ghost 5.130.0 source and public sending/email-only/newsletter
+documentation; the `Accept-Version: v5.0` minimum header does not establish support
+for every Ghost 5.x minor. No live email or compatibility test is claimed.
 
 ## Available Resources
 
@@ -205,7 +268,7 @@ The following entity families have registered tool names (see the limitations ab
 
 ## Available Tools
 
-Below is an inventory of the 46 registered tool names, not a full API coverage guarantee. Permissions and Ghost version may restrict operations.
+Below is an inventory of the 45 registered tool names, not a full API coverage guarantee. Permissions and Ghost version may restrict operations.
 
 ### Posts
 - **Browse Posts**: List posts with optional filters, pagination, and ordering.

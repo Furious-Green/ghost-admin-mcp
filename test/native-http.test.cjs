@@ -28,6 +28,58 @@ function client(url, executor) {
   return require('../build/client/sdkAdapter.js').createGhostClient({...config, url}, executor ? {makeRequest: executor} : {});
 }
 
+test('explicit delivery and opt-in use literal HTTP query/body contracts and never retry errors',async t=>{
+  const replies=[
+    {posts:[{id:'one',status:'sent',email:{status:'failed',error:'Unavailable'}}]},
+    {posts:[{id:'one',status:'scheduled'}]},
+    {newsletters:[{id:'n1',sender_email:null}],meta:{sent_email_verification:['sender_email'],opted_in_member_count:0,nested:{unknown:null}}},
+    {newsletters:[{id:'n2',sender_email:null}]},
+    {newsletters:[{id:'n3'}]},
+    {errors:[{message:'Permission denied',type:'NoPermissionError'}]},
+    {errors:[{message:'Update collision',type:'UpdateCollisionError'}]},
+    {errors:[{message:'Email unavailable',type:'EmailError'}]},
+  ];
+  const f=await fixture(t,(req,res)=>{
+    const index=f.requests.length-1;
+    res.statusCode=index<5?200:[403,409,503][index-5]??500;
+    res.setHeader('Content-Type','application/json').end(JSON.stringify(replies[index]??{errors:[{message:'Unexpected retry'}]}));
+  });
+  const m=await require('./helpers/mcpHarness.cjs').openMcpHarness(client(f.url+'/blog'));t.after(m.close);
+  const updated_at='2026-10-21T01:00:00+01:00',published_at='2027-01-15T12:00:00+01:00';
+  const calls=[
+    ['posts_edit',{id:'one',updated_at,status:'published',email_only:true,email_subject:'Hello',newsletter:'café-news',email_segment:'status:-free+label:vip',html:'<p>Hello</p>',save_revision:false}],
+    ['posts_edit',{id:'one',updated_at,status:'scheduled',published_at,email_only:true,newsletter:'weekly'}],
+    ['newsletters_add',{name:'Weekly',sender_email:'editor@example.invalid',opt_in_existing:true}],
+    ['newsletters_add',{name:'Other',header_image:null,opt_in_existing:false}],
+    ['newsletters_add',{name:'No default'}],
+  ];
+  for(let i=0;i<calls.length;i++){
+    const [name,args]=calls[i];const result=await m.mcpClient.callTool({name,arguments:args});assert.notEqual(result.isError,true);
+    assert.deepEqual(JSON.parse(result.content[0].text),{data:replies[i][name.startsWith('posts')?'posts':'newsletters'][0],...(replies[i].meta?{meta:replies[i].meta}:{})});
+  }
+  for(const message of ['Permission denied','Update collision','Email unavailable']){
+    const before=f.requests.length;
+    const result=await m.mcpClient.callTool({name:'posts_edit',arguments:{id:'one',updated_at,status:'published',newsletter:'weekly'}});
+    assert.equal(result.isError,true);assert.equal(result.content[0].text,message);assert.equal(f.requests.length,before+1);
+  }
+  assert.deepEqual(f.requests.map(r=>r.url),[
+    '/blog/ghost/api/admin/posts/one/?newsletter=caf%C3%A9-news&email_segment=status%3A-free%2Blabel%3Avip&save_revision=false&source=html',
+    '/blog/ghost/api/admin/posts/one/?newsletter=weekly',
+    '/blog/ghost/api/admin/newsletters/?opt_in_existing=true',
+    '/blog/ghost/api/admin/newsletters/?opt_in_existing=false',
+    '/blog/ghost/api/admin/newsletters/',
+    '/blog/ghost/api/admin/posts/one/?newsletter=weekly',
+    '/blog/ghost/api/admin/posts/one/?newsletter=weekly',
+    '/blog/ghost/api/admin/posts/one/?newsletter=weekly',
+  ]);
+  assert.deepEqual(JSON.parse(f.requests[0].body),{posts:[{updated_at,status:'published',email_only:true,email_subject:'Hello',html:'<p>Hello</p>'}]});
+  assert.deepEqual(JSON.parse(f.requests[1].body),{posts:[{updated_at,status:'scheduled',email_only:true,published_at}]});
+  assert.deepEqual(JSON.parse(f.requests[2].body),{newsletters:[{name:'Weekly',sender_email:'editor@example.invalid'}]});
+  assert.deepEqual(JSON.parse(f.requests[3].body),{newsletters:[{name:'Other',header_image:null}]});
+  assert.deepEqual(f.requests.map(r=>r.method),['PUT','PUT','POST','POST','POST','PUT','PUT','PUT']);
+  for(const r of f.requests){assert.equal(r.headers['accept-version'],'v5.0');assert.match(r.headers.authorization,/^Ghost /)}
+});
+
 test('remaining account MCP encodes email once and separates query controls on real HTTP',async t=>{
   const f=await fixture(t,(req,res)=>{
     const resource=req.url.split('/')[5];
