@@ -1,7 +1,7 @@
 // src/tools/newsletters.ts
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ghostApiClient } from "../ghostApi";
+import type { GhostClient } from "../client/types";
 
 // Parameter schemas as ZodRawShape (object literals)
 export const browseParams = {
@@ -64,7 +64,7 @@ export type ToolInputs = {
   delete: z.infer<z.ZodObject<typeof deleteParams>>;
 };
 
-export function registerNewsletterTools(server: McpServer) {
+export function registerNewsletterTools(server: McpServer, ghostApiClient: GhostClient) {
   // Browse newsletters
   server.tool(
     "newsletters_browse",

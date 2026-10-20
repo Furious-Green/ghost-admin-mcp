@@ -1,7 +1,7 @@
 // src/tools/invites.ts
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ghostApiClient } from "../ghostApi";
+import type { GhostClient } from "../client/types";
 
 // Parameter schemas as ZodRawShape (object literals)
 export const browseParams = {
@@ -24,7 +24,7 @@ export type ToolInputs = {
   delete: z.infer<z.ZodObject<typeof deleteParams>>;
 };
 
-export function registerInviteTools(server: McpServer) {
+export function registerInviteTools(server: McpServer, ghostApiClient: GhostClient) {
   // Browse invites
   server.tool(
     "invites_browse",

@@ -1,10 +1,10 @@
 // src/prompts.ts
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ghostApiClient } from "./ghostApi";
+import type { GhostClient } from "./client/types";
 
 // Example prompt: summarize-post
-export function registerPrompts(server: McpServer) {
+export function registerPrompts(server: McpServer, ghostApiClient: GhostClient) {
   server.prompt(
     "summarize-post",
     { postId: z.string() },

@@ -1,7 +1,7 @@
 // src/tools/roles.ts
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ghostApiClient } from "../ghostApi";
+import type { GhostClient } from "../client/types";
 
 // Parameter schemas as ZodRawShape (object literals)
 export const browseParams = {
@@ -20,7 +20,7 @@ export type ToolInputs = {
   read: z.infer<z.ZodObject<typeof readParams>>;
 };
 
-export function registerRoleTools(server: McpServer) {
+export function registerRoleTools(server: McpServer, ghostApiClient: GhostClient) {
   // Browse roles
   server.tool(
     "roles_browse",

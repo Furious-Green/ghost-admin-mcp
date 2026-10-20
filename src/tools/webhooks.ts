@@ -1,7 +1,7 @@
 // src/tools/webhooks.ts
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ghostApiClient } from "../ghostApi";
+import type { GhostClient } from "../client/types";
 
 // Parameter schemas as ZodRawShape (object literals)
 export const addParams = {
@@ -29,7 +29,7 @@ export type ToolInputs = {
   delete: z.infer<z.ZodObject<typeof deleteParams>>;
 };
 
-export function registerWebhookTools(server: McpServer) {
+export function registerWebhookTools(server: McpServer, ghostApiClient: GhostClient) {
   // Add webhook
   server.tool(
     "webhooks_add",
