@@ -34,10 +34,8 @@ test('stdio initializes and discovers all tools without any Ghost HTTP calls', {
     const page = await cli.request('tools/list', cursor ? {cursor} : {});
     names.push(...page.tools.map(tool => tool.name));
     for (const tool of page.tools) {
-      if (/^(posts|pages|tags)_/.test(tool.name)) {
-        assert.equal(tool.inputSchema.additionalProperties, false, tool.name);
-        assert.equal(tool.outputSchema, undefined);
-      }
+      assert.equal(tool.inputSchema.additionalProperties, false, tool.name);
+      assert.equal(tool.outputSchema, undefined);
       if (tool.name === 'posts_edit') {
         assert.equal(tool.inputSchema.properties.save_revision.type, 'boolean');
         assert.ok(tool.inputSchema.properties.custom_template);
@@ -49,6 +47,15 @@ test('stdio initializes and discovers all tools without any Ghost HTTP calls', {
         assert.ok(tool.inputSchema.properties.limit.anyOf);
         assert.ok(tool.inputSchema.properties.search);
       }
+      if (tool.name === 'members_read') {
+        assert.equal(tool.inputSchema.properties.fields, undefined);
+        assert.ok(tool.inputSchema.properties.include);
+      }
+      if (tool.name === 'newsletters_edit') {
+        assert.deepEqual(tool.inputSchema.properties.status.enum, ['active','archived']);
+        assert.ok(tool.inputSchema.properties.include);
+      }
+      if (tool.name === 'tiers_read') assert.equal(tool.inputSchema.properties.include, undefined);
     }
     cursor = page.nextCursor;
   } while (cursor);

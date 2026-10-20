@@ -28,6 +28,43 @@ function client(url, executor) {
   return require('../build/client/sdkAdapter.js').createGhostClient({...config, url}, executor ? {makeRequest: executor} : {});
 }
 
+test('remaining account MCP encodes email once and separates query controls on real HTTP',async t=>{
+  const f=await fixture(t,(req,res)=>{
+    const resource=req.url.split('/')[5];
+    res.setHeader('Content-Type','application/json').end(JSON.stringify({[resource]:[{id:'one'}],meta:{retained:true}}));
+  });
+  const m=await require('./helpers/mcpHarness.cjs').openMcpHarness(client(f.url+'/blog'));t.after(m.close);
+  for(const [name,args]of [
+    ['members_read',{email:'name+tag%box@example.invalid',include:'tiers'}],
+    ['users_read',{email:'name+tag%box@example.invalid',fields:'id,name',include:'roles'}],
+    ['newsletters_read',{slug:'café space',fields:'id,name',include:'count.members'}],
+    ['users_edit',{id:'me',email:'name+tag%box@example.invalid',bio:null,include:'roles'}],
+    ['newsletters_edit',{id:'one',sender_email:null,show_badge:false,include:'count.members'}],
+    ['invites_browse',{limit:'all',fields:'id,email'}],
+    ['webhooks_edit',{id:'one',name:null,secret:null}],
+  ]){
+    const result=await m.mcpClient.callTool({name,arguments:args});assert.notEqual(result.isError,true);
+    assert.deepEqual(JSON.parse(result.content[0].text),{data:name.endsWith('_browse')?[{id:'one'}]:{id:'one'},meta:{retained:true}});
+  }
+  assert.deepEqual(f.requests.map(r=>r.url),[
+    '/blog/ghost/api/admin/members/email/name%2Btag%25box%40example.invalid/?include=tiers',
+    '/blog/ghost/api/admin/users/email/name%2Btag%25box%40example.invalid/?fields=id%2Cname&include=roles',
+    '/blog/ghost/api/admin/newsletters/slug/caf%C3%A9%20space/?fields=id%2Cname&include=count.members',
+    '/blog/ghost/api/admin/users/me/?include=roles',
+    '/blog/ghost/api/admin/newsletters/one/?include=count.members',
+    '/blog/ghost/api/admin/invites/?limit=all&fields=id,email',
+    '/blog/ghost/api/admin/webhooks/one/',
+  ]);
+  assert.deepEqual(JSON.parse(f.requests[3].body),{users:[{email:'name+tag%box@example.invalid',bio:null}]});
+  assert.deepEqual(JSON.parse(f.requests[4].body),{newsletters:[{sender_email:null,show_badge:false}]});
+  assert.deepEqual(JSON.parse(f.requests[6].body),{webhooks:[{name:null,secret:null}]});
+  assert.deepEqual(f.requests.map(r=>r.method),['GET','GET','GET','PUT','PUT','GET','PUT']);
+  for(const r of f.requests){assert.equal(r.headers['accept-version'],'v5.0');assert.match(r.headers.authorization,/^Ghost /)}
+  await assert.rejects(m.mcpClient.callTool({name:'members_read',arguments:{id:'one',fields:'id'}}),/Invalid arguments/);
+  await assert.rejects(m.mcpClient.callTool({name:'tiers_read',arguments:{id:'one',include:'benefits'}}),/Invalid arguments/);
+  assert.equal(f.requests.length,7);
+});
+
 test('strict content MCP uses one encoded selector and forwards revision options apart from nullable bodies over HTTP', async t => {
   const f = await fixture(t, (req,res) => {
     const resource=req.url.split('/')[5];

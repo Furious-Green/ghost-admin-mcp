@@ -15,7 +15,7 @@ export function registerAccountTools(server: McpServer, client: GhostClient, res
             const prepared = splitAccountRequest(resource, op, validateAccountInput(resource, op, args));
             const method = methods[op];
             if (!method) throw new Error(`Unsupported Ghost capability: ${resource}.${op}`);
-            const result = await method(prepared.input, prepared.query);
+            const result = await method.call(client[resource], prepared.input, prepared.query);
             return {content: [{type: 'text', text: op === 'delete'
                 ? `${label} with id ${args.id} deleted.` : JSON.stringify(result, null, 2)}]};
         });

@@ -91,3 +91,23 @@ Schema/nullable/query/selector rules map to Task 1, both validation boundaries t
 Task 2, wire/discovery/migration/closure to Task 3. Five Review Focus classes have
 tests assigned above. Native signatures stay flat; SDK preparer returns same
 shape contract as content preparer but selector encoding occurs only in adapter.
+
+## Issue #6 acceptance check (both slices)
+
+- Explicit per-resource/operation query options: content/post/page/tag maps from
+  #17 plus account maps and native audit here; MCP, HTTP and discovery contracts.
+- Writable post/page/tag fields and HTML/Lexical/SEO/social/image/relationships/
+  timestamps: #17, retained by full content and response regression suite.
+- Selectors, integers, status/visibility and supported null clears: preparation,
+  real MCP/direct and native schemas tests; no new account/billing capabilities.
+- `limit:"all"`: explicit browse resource lists; no offers/roles paging, tier
+  baseline whole-repository caveat documented (no fabricated client pagination).
+- Query/body split after real MCP parsing: content plus account MCP/HTTP tests,
+  including false/null/empty arrays and encoded email paths.
+- No arbitrary URL/HTTP proxy: existing fixed-resource adapters only.
+- Version evidence: Ghost 5.130.0 pinned API schemas/endpoints/models/services;
+  no live compatibility claim. Newsletter-delete SDK registration is not an
+  endpoint; its #7 capability decision and effectful query exclusions documented.
+
+This scoped contract completes #6. The PR may use `Closes #6`; that closes on
+merge, not on branch push. #7/#11/dependency remediation remain separate work.

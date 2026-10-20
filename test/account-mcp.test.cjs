@@ -81,3 +81,29 @@ test('direct SDK callers cannot bypass strict account validation or mutate owned
   assert.deepEqual(r.requests[0].data,{newsletters:[{sender_email:null,show_badge:false}]});
   assert.deepEqual(input,copy);assert.deepEqual(options,{include:'count.members'});
 });
+
+test('MCP native audit rejects unsupported tier includes unsafe integers and offer enum ranges',async t=>{
+  const r=await setup(t);
+  for(const [name,args]of [
+    ['tiers_browse',{include:'benefits'}],['tiers_read',{id:'one',include:'monthly_price'}],
+    ['tiers_browse',{page:Number.MAX_SAFE_INTEGER+1}],['invites_browse',{limit:Number.MAX_SAFE_INTEGER+1}],
+    ['tiers_add',{name:'A',visibility:'private'}],
+    ['offers_add',{name:'A',code:'a',cadence:'week',duration:'once',amount:10,tier_id:'one',type:'percent'}],
+  ])await assert.rejects(r.call(name,args),/Invalid arguments/);
+  const range=await r.call('offers_add',{name:'A',code:'a',cadence:'month',duration:'once',amount:101,tier_id:'one',type:'percent'});
+  assert.equal(range.isError,true);assert.equal(r.requests.length,0);
+});
+
+test('shared account registration preserves the receiver of injected resource methods',async t=>{
+  const r=makeRecordingClient();
+  const members={...r.client.members,async read(input){
+    const response=await this.browse({filter:`id:${input.id}`});
+    return {data:response.data[0]};
+  }};
+  r.enqueueResponse({members:[{id:'one',name:'Ada'}]});
+  const m=await openMcpHarness({...r.client,members});t.after(m.close);
+  const output=await m.mcpClient.callTool({name:'members_read',arguments:{id:'one'}});
+  assert.notEqual(output.isError,true);
+  assert.deepEqual(JSON.parse(output.content[0].text),{data:{id:'one',name:'Ada'}});
+  assert.deepEqual(r.requests[0].params,{filter:'id:one'});
+});
