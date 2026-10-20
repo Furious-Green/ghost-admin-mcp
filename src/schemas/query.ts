@@ -16,7 +16,11 @@ export const pagingParams = {
     page: z.number().int().safe().positive().optional(),
     limit: z.union([z.number().int().safe().positive(), z.literal('all')]).optional(),
 };
-export const dateTime = z.string().datetime({offset: true});
+export const dateTime = z.string().datetime({offset: true}).refine(value => {
+    // Pinned Zod checks offset syntax, but not the RFC 3339 hour/minute ranges.
+    const offset = /[+-](\d{2}):?(\d{2})$/.exec(value);
+    return !offset || (Number(offset[1]) <= 23 && Number(offset[2]) <= 59);
+}, 'Invalid timezone offset');
 export const nullableText = (max: number) => z.string().max(max).nullable().optional();
 export const seoFields = {
     meta_title: nullableText(300), meta_description: nullableText(500),

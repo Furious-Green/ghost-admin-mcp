@@ -116,3 +116,18 @@ test('copy rejects direct unknown properties and supports baseline response form
   assert.equal(r.requests.length,2);
   for(const request of r.requests)assert.deepEqual(request.params,{formats:'plaintext,mobiledoc'});
 });
+
+test('MCP rejects impossible timestamp offsets before scheduling or editing HTTP',async t=>{
+  const r=await setup(t);
+  for(const resource of ['posts','pages'])for(const offset of ['+99:99','+24:00','-24:00','+01:99','-0160','+2400']) {
+    const value='2026-10-21T00:00:00'+offset;
+    await assert.rejects(r.call(`${resource}_edit`,{id:'one',updated_at:value}),/Invalid arguments/);
+    await assert.rejects(r.call(`${resource}_add`,{title:'A',published_at:value}),/Invalid arguments/);
+  }
+  assert.equal(r.requests.length,0);
+  const value='2026-10-21T00:00:00-01:30';
+  const result=await r.call('posts_edit',{id:'one',updated_at:value,published_at:value});
+  assert.notEqual(result.isError,true);
+  assert.deepEqual(r.requests[0].data,{posts:[{updated_at:value,published_at:value}]});
+  assert.equal(r.requests.length,1);
+});

@@ -73,3 +73,17 @@ test('SDK selectors are safe single segments and never encode content slugs', ()
   }
   assert.deepEqual(prepare('posts','edit',{id:'one',updated_at:timestamp,slug:'café space',tags:[{id:'tag',slug:'tag-slug',name:'Tag'}],authors:[{id:'author',email:'author@example.invalid'}]}),{input:{id:'one',updated_at:timestamp,slug:'café space',tags:[{id:'tag',slug:'tag-slug',name:'Tag'}],authors:[{id:'author',email:'author@example.invalid'}]},query:{}});
 });
+
+test('content timestamps reject impossible offsets and preserve valid offset strings exactly', () => {
+  for(const offset of ['+99:99','+24:00','-24:00','+01:99','-0160','+2400']) {
+    const value='2026-10-21T00:00:00'+offset;
+    for(const resource of ['posts','pages']) {
+      assert.throws(()=>prepare(resource,'edit',{id:'one',updated_at:value}));
+      assert.throws(()=>prepare(resource,'add',{title:'A',published_at:value}));
+    }
+  }
+  for(const offset of ['+00:00','-01:30','+23:59','+0130','Z']) {
+    const value='2026-10-21T00:00:00'+offset;
+    assert.deepEqual(prepare('posts','edit',{id:'one',updated_at:value,published_at:value}),{input:{id:'one',updated_at:value,published_at:value},query:{}});
+  }
+});
