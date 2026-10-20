@@ -241,4 +241,4 @@ remain release/adoption blockers; hosted CI requires an authorized push.
 - [x] Approve conversational architecture, semantics, migration and verification.
 - [x] Write specification and self-review contracts, scope and ambiguity.
 - [x] User reviews this written specification.
-- [ ] Write/review implementation plan and confirm execution method.
+- [x] Write/review implementation plan and confirm execution method.
