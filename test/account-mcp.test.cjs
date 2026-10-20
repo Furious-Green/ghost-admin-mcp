@@ -41,12 +41,12 @@ test('all remaining SDK tool schemas reject unknown keys and invalid operation-s
   for(const resource of ['members','users','newsletters','webhooks'])for(const [op,input]of Object.entries(families[resource])){
     await assert.rejects(r.call(`${resource}_${op}`,{...input,unknown:'SECRET'}),/Invalid arguments/);count++;
   }
-  assert.equal(count,17);
+  assert.equal(count,16);
   for(const [name,args]of [
     ['members_read',{id:'one',fields:'id'}],['members_edit',{id:'one',labels:[{name:'VIP',unknown:1}]}],
     ['members_edit',{id:'one',newsletters:[{id:'one',unknown:1}]}],['members_browse',{page:0}],
     ['users_browse',{include:'tags'}],['newsletters_edit',{id:'one',status:'inactive'}],
-    ['newsletters_edit',{id:'one',title_alignment:'right'}],['newsletters_add',{name:'A',opt_in_existing:true}],
+    ['newsletters_edit',{id:'one',title_alignment:'right'}],['newsletters_edit',{id:'one',opt_in_existing:true}],
     ['webhooks_edit',{id:'one',target_url:'file:///secret'}],['users_read',{id:'../one'}],
     ['newsletters_read',{id:'one',filter:'status:active'}],
   ])await assert.rejects(r.call(name,args),/Invalid arguments/);

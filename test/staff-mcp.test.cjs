@@ -18,7 +18,7 @@ test('staff MCP discovery omits all three nonexistent tools and sends no HTTP', 
   const r = await harness(t);
   let cursor; const tools = [];
   do {const page = await r.mcpClient.listTools(cursor ? {cursor} : {}); tools.push(...page.tools); cursor = page.nextCursor;} while (cursor);
-  assert.equal(tools.length, 46);
+  assert.equal(tools.length, 45);
   for (const name of ['roles_read', 'tiers_delete', 'offers_delete']) {
     assert.equal(tools.some(t => t.name === name), false);
     for (const args of [{id: 'one'}, {name: 'Admin'}]) await assert.rejects(r.mcpClient.callTool({name, arguments: args}), /not found/);

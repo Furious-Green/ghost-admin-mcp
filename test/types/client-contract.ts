@@ -88,3 +88,8 @@ client.posts.edit({id: 'one', updated_at: '2026-10-21T00:00:00Z', status: 'publi
 client.posts.add({title: 'A', newsletter: 'weekly'});
 // @ts-expect-error Pages do not route newsletters.
 client.pages.edit({id: 'one', updated_at: '2026-10-21T00:00:00Z', newsletter: 'weekly'});
+client.newsletters.add({name: 'A', slug: 'weekly', sender_email: null, header_image: null, footer_content: null, opt_in_existing: false});
+// @ts-expect-error Newsletter deletion has no baseline endpoint or adapter surface.
+client.newsletters.delete({id: 'one'});
+// @ts-expect-error Opt-in of existing members is creation-only.
+client.newsletters.edit({id: 'one', opt_in_existing: true});

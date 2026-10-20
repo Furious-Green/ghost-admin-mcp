@@ -13,7 +13,7 @@ exports.families = {
   members: {browse: {}, read: {id: 'abc123'}, add: {email: 'member@example.invalid'}, edit: {id: 'abc123', name: 'Changed'}, delete: {id: 'abc123'}},
   users: {browse: {}, read: {id: 'abc123'}, edit: {id: 'abc123', name: 'Changed'}, delete: {id: 'abc123'}},
   tags: {browse: {}, read: {id: 'abc123'}, add: {name: 'Example'}, edit: {id: 'abc123', name: 'Changed'}, delete: {id: 'abc123'}},
-  newsletters: {browse: {}, read: {id: 'abc123'}, add: {name: 'Example'}, edit: {id: 'abc123', name: 'Changed'}, delete: {id: 'abc123'}},
+  newsletters: {browse: {}, read: {id: 'abc123'}, add: {name: 'Example'}, edit: {id: 'abc123', name: 'Changed'}},
   webhooks: {add: {event: 'post.added', target_url: 'https://receiver.invalid/hook'}, edit: {id: 'abc123', name: 'Changed'}, delete: {id: 'abc123'}},
   tiers: {browse: {}, read: {id: 'abc123'}, add: {name: 'Example'}, edit: {id: 'abc123', name: 'Changed'}},
   offers: {browse: {}, read: {id: 'abc123'}, add: {name: 'Example', code: 'example', cadence: 'month', duration: 'once', amount: 10, tier_id: 'tier1', type: 'percent'}, edit: {id: 'abc123', name: 'Changed'}},
