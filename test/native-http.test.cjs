@@ -28,6 +28,17 @@ function client(url, executor) {
   return require('../build/client/sdkAdapter.js').createGhostClient({...config, url}, executor ? {makeRequest: executor} : {});
 }
 
+test('shared native core serializes JSON PUT and bodyless DELETE over actual HTTP', async t => {
+  const f = await fixture(t, (req, res) => req.method === 'DELETE' ? res.writeHead(204).end() : res.setHeader('Content-Type', 'application/json').end('{"tiers":[{"id":"one"}]}'));
+  const send = require('../build/client/nativeAdmin.js').createNativeAdminRequest({...config, url: f.url});
+  assert.deepEqual(await send('tiers.edit', {id: 'one', body: {tiers: [{active: false}]}}), {tiers: [{id: 'one'}]});
+  await send('invites.delete', {id: 'one'});
+  assert.equal(f.requests[0].body, '{"tiers":[{"active":false}]}');
+  assert.equal(f.requests[0].headers['content-type'], 'application/json');
+  assert.equal(f.requests[1].body, '');
+  assert.equal(f.requests[1].method, 'DELETE');
+});
+
 test('default HTTP copy sends authenticated POST with no body and preserves query/subdirectory', {timeout: 10000}, async t => {
   const f = await fixture(t, (_req, res) => res.setHeader('Content-Type', 'application/json').end(JSON.stringify({pages: [{id: 'copy1'}]})));
   assert.deepEqual(await client(f.url + '/blog').pages.copy({id: 'abc123', formats: 'html,lexical'}), {id: 'copy1'});
