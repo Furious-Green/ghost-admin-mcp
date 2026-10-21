@@ -17,9 +17,14 @@ const routes = {
     'invites.add': ['invites', 'POST', false, true],
     'invites.delete': ['invites', 'DELETE', true, false],
     'roles.browse': ['roles', 'GET', false, false],
+    'labels.browse': ['labels', 'GET', false, false],
+    'labels.read': ['labels', 'GET', true, false],
+    'labels.add': ['labels', 'POST', false, true],
+    'labels.edit': ['labels', 'PUT', true, true],
+    'labels.delete': ['labels', 'DELETE', true, false],
 } as const;
 export type NativeOperation = keyof typeof routes;
-export type NativeInput = {id?: string; query?: QueryOptions; body?: unknown};
+export type NativeInput = {id?: string; slug?: string; query?: QueryOptions; body?: unknown};
 
 export function encodeNativeId(value: unknown): string {
     if (typeof value !== 'string' || !value.trim() || value === '.' || value === '..'
@@ -59,7 +64,11 @@ export function createNativeAdminRequest(config: GhostConfig, makeRequest?: Requ
         const label = operation.replace('.', ' ');
         const invalid: (field: string) => never = field => { throw new Error(`Invalid Ghost ${copy ? 'copy' : label} ${field}.`); };
         let segment = '';
-        if (needsId) {
+        if (input.slug !== undefined && operation !== 'labels.read') invalid('slug');
+        if (operation === 'labels.read' && Number(input.id !== undefined) + Number(input.slug !== undefined) !== 1) invalid('selector');
+        if (operation === 'labels.read' && input.slug !== undefined) {
+            try { segment = `slug/${encodeNativeId(input.slug)}`; } catch { invalid('slug'); }
+        } else if (needsId) {
             try { segment = encodeNativeId(input.id); } catch { invalid('id'); }
         }
         if (!write && input.body !== undefined) invalid('body');

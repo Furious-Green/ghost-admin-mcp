@@ -25,7 +25,7 @@ Keep SDK resources and member relationship schemas untouched.
 4. Singleton site nulls/extras/unknown metadata remain literal; malformed shapes fail (Task2).
 5. Label deletion does not delete members; existing combined member label/newsletter inputs stay unchanged (Task1/3).
 
-### Task1: Label resource
+### Task 1: Label resource
 **Files:** create `src/schemas/labels.ts`, `src/tools/labels.ts`,
 `src/client/labelsClient.ts`, `test/labels-site.test.cjs`; modify
 `src/client/{nativeAdmin,sdkAdapter,types}.ts`, `src/createServer.ts`, tests/fixtures.
@@ -42,7 +42,7 @@ exactly one selector. Existing native routes remain ID-only. Tool factory
   Add fixture family and update exact tool count assertions to50 temporarily.
 - [ ] GREEN focused/full suite/typecheck/diff check; commit.
 
-### Task2: Public site singleton
+### Task 2: Public site singleton
 **Files:** create `src/tools/site.ts`, `src/client/siteClient.ts`;
 modify `src/client/{nativeAdmin,sdkAdapter,types}.ts`, `src/createServer.ts`,
 `test/labels-site.test.cjs`, inventory fixtures and response/import/type tests.
@@ -58,7 +58,7 @@ without changing array normalizers or any SDK capture.
   (no site settings/URL args, no label generated fields) and import coverage.
 - [ ] Commit self-contained site deliverable.
 
-### Task3: HTTP, docs, review and integration
+### Task 3: HTTP, docs, review and integration
 **Files:** `test/native-http.test.cjs`, `test/stdio.test.cjs`,
 `test/labels-site.test.cjs`, `README.md`, this plan outcome section.
 - [ ] Loopback verifies labels slug Unicode encoded once, paging/include, JWT,
