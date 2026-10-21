@@ -17,8 +17,9 @@ function entryName(bytes: Buffer, flags: number): string {
     if (!bytes.length || bytes.length > 1024 || (!(flags & 0x800) && bytes.some(byte => byte > 127))) return invalid();
     let name: string;
     try { name = new TextDecoder('utf-8', {fatal: true}).decode(bytes); } catch { return invalid(); }
-    if (/[\\:\x00-\x1f\x7f]/.test(name) || name.startsWith('/')) return invalid();
-    const parts = name.replace(/\/$/, '').split('/');
+    const normalized = name.normalize('NFKC');
+    if (/[\\:\x00-\x1f\x7f]/.test(normalized) || normalized.startsWith('/')) return invalid();
+    const parts = normalized.replace(/\/$/, '').split('/');
     if (parts.some(part => !part || part === '.' || part === '..' || /[. ]$/.test(part)
         || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(part))) return invalid();
     return name;
@@ -47,7 +48,10 @@ export function inspectThemeZip(bytes: Buffer): void {
         expanded += uncompressed;
         if (expanded > MAX_THEME_EXPANDED_BYTES) return invalid();
         const rawName = bytes.subarray(at + 46, at + 46 + nameSize), name = entryName(rawName, flags), directory = name.endsWith('/');
-        const key = name.replace(/\/$/, '').normalize('NFC').toLowerCase();
+        // Conservative compatibility/case alias key, shared by duplicate and
+        // parent checks. Uppercase folds final sigma/ligatures; capital sharp S
+        // needs the same expansion as lowercase sharp S. May reject extra aliases.
+        const key = name.normalize('NFKC').replace(/\/$/, '').replace(/\u1e9e/g, 'SS').toUpperCase().normalize('NFKC');
         if (paths.has(key) || (directory && uncompressed !== 0)) return invalid();
         paths.set(key, directory); if (!directory) files++;
         const attrs = bytes.readUInt32LE(at + 38), type = (attrs >>> 16) & 0xf000;

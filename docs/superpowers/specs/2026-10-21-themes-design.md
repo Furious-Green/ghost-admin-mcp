@@ -36,7 +36,8 @@ Ghost/gscan validates actual theme contents and supports its own root layout.
 
 Entry paths reject absolute paths, drive/colon/backslash/control syntax, empty
 segments, . or .. components, trailing component spaces/dots and Windows device
-names. Reject duplicate normalized/casefolded names (including file/dir aliases)
+names (including superscript device-number variants). Reject duplicate names
+using a conservative NFKC/uppercase alias key, with sharp-S expansion (including file/dir aliases)
 and file-as-parent conflicts. Safe UTF8 uses fatal decoding, non-UTF8-flag names
 must be ASCII. No local file reads/writes, decompression, extraction, CRC-content
 verification, template execution or gscan invocation. Declared sizes can lie:

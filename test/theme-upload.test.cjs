@@ -54,6 +54,19 @@ test('theme metadata bounds are literal declarations, not claims of decoded cont
   const many=fixtures.zip(Array.from({length:2000},(_,i)=>({name:`file${i}`,data:''})));assert.equal(prepare(fixtures.input(many)).bytes.length,many.bytes.length);
 });
 
+test('Unicode aliases cannot bypass ZIP duplicate and file-parent policies',()=>{
+  for(const files of [
+    [{name:'Σ.hbs'},{name:'ς.hbs'}], [{name:'Σ'},{name:'ς/child.hbs'}],
+    [{name:'ß.hbs'},{name:'ẞ.hbs'}], [{name:'SS'},{name:'ß/child.hbs'}],
+    [{name:'folder/',data:''},{name:'folder／'}],
+  ])reject(fixtures.zip(files).bytes);
+  const valid=fixtures.zip([{name:'theme/é.hbs'},{name:'theme/Σ.hbs'}]);assert.deepEqual(prepare(fixtures.input(valid)).bytes,valid.bytes);
+});
+
+test('Windows superscript device names are rejected in ZIP paths',()=>{
+  for(const name of ['COM¹.txt','LPT².txt','folder/COM³.log'])reject(fixtures.zip([{name}]).bytes);
+});
+
 async function setup(t){const r=require('./helpers/recordingClient.cjs').makeRecordingClient();const m=await require('./helpers/mcpHarness.cjs').openMcpHarness(r.client);t.after(m.close);return {...r,...m,call:(op,args)=>m.mcpClient.callTool({name:`themes_${op}`,arguments:structuredClone(args)})}}
 
 test('theme upload multipart and activation stay separate and retain actual active state and validation metadata',async t=>{

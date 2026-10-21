@@ -445,10 +445,13 @@ maximum **2000 entries**, **1024-byte entry names**, and **100MiB total declared
 uncompressed size**. It rejects ZIP64, encryption/multidisk/unsupported compression,
 alternate Unicode-path/AES extras, malformed records, symlinks/special files,
 unsafe absolute/traversal/drive/backslash/control paths, Windows device names,
-duplicates (normalized/case-insensitive), file/directory aliases and file-parent
+duplicates (conservative NFKC/uppercase aliases with sharp-S expansion), including
+Greek case aliases and superscript Windows device names, file/directory aliases and file-parent
 conflicts. Empty/directory-only archives and prefixed/trailing/gapped records are
 rejected. Some ZIP writers/variants therefore require repacking; this is not a
 complete ZIP-format implementation.
+Compatibility normalization is deliberately conservative and can also reject
+distinct Unicode names; use unambiguous archive paths when repacking.
 
 **No local extraction, decompression, CRC-content verification, filesystem reads
 or temporary files occur.** Declared sizes can lie: these checks do not prove
