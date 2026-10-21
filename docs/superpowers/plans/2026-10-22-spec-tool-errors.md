@@ -49,7 +49,7 @@ Interfaces: fork0.2.0 and current migration links, archive version evidence from
 existing verify:artifacts; resource/prompt protocol classifications unchanged.
 - [x] Manifest version test RED0.1.0 ->0.2.0 manifest/lock GREEN; document wire
   examples/client handling and explicitly justified retained dispatch/registry.
-- [ ] Clean ci/typecheck/full suite/full+production audit/diff; commit then source/
+- [x] Clean ci/typecheck/full suite/full+production audit/diff; commit then source/
   runtime artifacts and checksums at committed SHA. No actual publication;
   separately requested annotated tags obey the merge-boundary rule above.
 - [ ] Independent read-only whole-branch review, fix material findings test-first;
@@ -87,7 +87,40 @@ existing verify:artifacts; resource/prompt protocol classifications unchanged.
   dependency graph updates. Current docs explain spec-vs-SDK, wire examples,
   client handling before parsing success and retained dispatcher/lifecycle need.
 - Clean ci/typecheck/**417/417 tests**, full+production audits**zero**, diff check
-  passed before review. Pending committed artifact gate and independent review.
+  passed before review. Source/runtime artifact gate at173fef9 passed, manifest/
+  handshake0.2.0 and zeroGhost requests. Exact-head checksums verified.
 - Remote tag listing was empty; only CI workflow exists, with tests/artifact
   checks and no publish/deploy/upload actions. User-requested v0.1.0 tag will
   identify merged #26 (4072575), not this0.2.0 branch. v0.2.0 awaits actual merge.
+
+## Independent whole-branch review
+
+One read-only review of4072575..173fef9 found **no Critical, Important or Minor
+findings**. Independently verified typecheck,417 tests, both audits0, whitespace,
+the entire diff/spec/SDK implementations, public-documentation privacy and
+artifact checksums/exact-head metadata. No fix pass or second review needed.
+
+Review limits retained explicitly:
+- Experimental task conformance remains excluded as described in the design and
+  migration: fail-closed metadata rejection is not the receiver ignore-metadata
+  behavior. Cost: ordinary error alignment is not full task/protocol conformance.
+- Live Ghost permissions/side effects remain untested and unauthorized. Cost:
+  offline evidence cannot guarantee a particular live instance/credential.
+- Reviewer did not repeat fresh artifact installs; executor's isolated gate and
+  exact-head checksums supply that evidence, to be rerun at final commit. Cost:
+  clean-install evidence is not a second independent installation run.
+- Tags/PR CI/post-merge operations were outside read-only review. Executor checks
+  tag targets/conflicts/workflows and CI; v0.2.0 waits for user merge. Cost: no
+  assurance of operations that have not happened, no release/deploy permission.
+
+## Issue #25 acceptance audit
+
+Spec/SDK error comparison, chosen routing/argument/budget/execution/resource/
+prompt classifications, old/new wire examples and client migration are documented.
+Dispatcher retained for spec and safety reasons; no dependency internals patched.
+All strictness/caps/sanitizers/isolation/lifecycle/envelope/no-retry boundaries
+retain their regressions. Real-MCP and raw stdio tests cover both channels and
+zero HTTP on rejected input. Version0.2.0 and artifact/dependency gates pass.
+Closing #25 is justified for this ordinary-tool error scope; experimental tasks
+are an explicit limitation, not silently certified by completion. Final PR/CI and
+annotated v0.1.0 tag are recorded externally; no automatic merge or v0.2.0 tag.
