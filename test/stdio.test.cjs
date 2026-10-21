@@ -27,6 +27,7 @@ test('stdio initializes and discovers all tools without any Ghost HTTP calls', {
   const cli = await require('./helpers/stdioHarness.cjs').startCli(t);
   const initialized = await cli.request('initialize', {protocolVersion: LATEST_PROTOCOL_VERSION, capabilities: {}, clientInfo: {name: 'stdio-smoke-test', version: '1.0.0'}});
   assert.equal(initialized.serverInfo.name, 'ghost-mcp-ts');
+  assert.equal(initialized.serverInfo.version, require('../package.json').version);
   cli.notify('notifications/initialized');
   const names = [];
   let cursor;

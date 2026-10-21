@@ -27,7 +27,9 @@ export function createStaffClients(config: GhostConfig, makeRequest?: RequestExe
             // The shared core already removed upstream diagnostics. Add only fixed,
             // actionable guidance, without guessing which kind of key was supplied.
             if (error instanceof Error && 'statusCode' in error && [401, 403].includes(Number(error.statusCode))) {
-                error.message += ' This operation may require a staff access token with sufficient permissions.';
+                error.message += operation === 'invites.browse' || operation === 'invites.delete'
+                    ? ' This operation may require a staff access token with sufficient permissions.'
+                    : ' Check the integration key or staff access token and its permissions; Ghost enforces role and operation restrictions.';
             }
             throw error;
         }

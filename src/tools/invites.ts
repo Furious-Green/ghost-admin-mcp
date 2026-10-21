@@ -9,7 +9,7 @@ export function registerInviteTools(server: McpServer, client: GhostClient) {
     registerStrictTool(server, 'invites_browse', 'Browse staff invitations. Requires a staff access token with sufficient permissions.', inviteBrowseParams, async args => ({
         content: [{type: 'text', text: JSON.stringify(await client.invites.browse(args), null, 2)}],
     }));
-    registerStrictTool(server, 'invites_add', 'Invite staff by role ID and email. Sends a real invitation email; requires a staff access token with sufficient permissions.', inviteAddParams, async args => ({
+    registerStrictTool(server, 'invites_add', 'Invite staff by role ID and email. Sends a real invitation email. Ghost 5.130.0 permits the integration route; integration keys or staff access tokens still need sufficient role and operation permissions.', inviteAddParams, async args => ({
         content: [{type: 'text', text: JSON.stringify(await client.invites.add(args), null, 2)}],
     }));
     registerStrictTool(server, 'invites_delete', 'Delete a staff invitation by ID. Requires a staff access token with sufficient permissions.', inviteDeleteParams, async args => {

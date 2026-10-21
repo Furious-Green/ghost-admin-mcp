@@ -1,7 +1,12 @@
 {
-    "name": "@fanyangmeng/ghost-mcp",
-    "version": "0.2.0",
-    "description": "MCP server for using the Ghost API",
+    "name": "ghost-admin-mcp",
+    "private": true,
+    "version": "0.1.0",
+    "description": "Public Ghost Admin MCP fork with strict inputs and offline contract verification",
+    "repository": {"type": "git", "url": "https://github.com/Furious-Green/ghost-admin-mcp.git"},
+    "bugs": {"url": "https://github.com/Furious-Green/ghost-admin-mcp/issues"},
+    "homepage": "https://github.com/Furious-Green/ghost-admin-mcp#readme",
+    "engines": {"node": "22.x"},
     "main": "build/server.js",
     "bin": {
         "ghost-mcp": "build/server.js"
@@ -14,10 +19,8 @@
         "start": "node build/server.js",
         "prepare": "npm run build",
         "test": "npm run build && node --test test/*.test.cjs",
-        "typecheck": "tsc --noEmit && tsc -p tsconfig.test-types.json"
-    },
-    "publishConfig": {
-        "access": "public"
+        "typecheck": "tsc --noEmit && tsc -p tsconfig.test-types.json",
+        "verify:artifacts": "node scripts/verify-artifacts.cjs"
     },
     "keywords": [],
     "author": "Fanyang Meng (https://mfydev.link)",

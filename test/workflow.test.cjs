@@ -16,7 +16,7 @@ test('CI validates this project on Node 22 without privileged triggers, secrets 
   const setup = job.steps.find(step => step.uses?.startsWith('actions/setup-node@'));
   assert.equal(setup.with['node-version'], 22);
   assert.equal(setup.with.cache, 'npm');
-  assert.deepEqual(job.steps.filter(step => step.run).map(step => step.run), ['npm ci', 'npm run typecheck', 'npm test']);
+  assert.deepEqual(job.steps.filter(step => step.run).map(step => step.run), ['npm ci', 'npm run typecheck', 'npm test', 'npm run verify:artifacts']);
   assert.ok(job.steps.some(step => step.uses === 'actions/checkout@v4'));
   assert.ok(!JSON.stringify(workflow).includes('secrets.'));
   const manifest = JSON.parse(readFileSync(path.join(__dirname, '../package.json'), 'utf8'));

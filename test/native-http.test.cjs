@@ -357,10 +357,10 @@ test('staff HTTP sends only native invite JSON, deletes without body and forward
   assert.equal(f.requests.length, 3);
 });
 
-test('staff HTTP permission failures discard echoed credentials and explain staff permissions', async t => {
+test('invite creation HTTP permission failures discard credentials without claiming staff-only access', async t => {
   const f = await fixture(t, (_req, res) => res.writeHead(403, {'Content-Type': 'application/json'}).end(JSON.stringify({errors: [{type: 'NoPermissionError', message: config.key}]})));
   await assert.rejects(client(f.url).invites.add({role_id: 'role1', email: 'staff@example.invalid'}), e => {
-    assert.match(e.message, /staff access token with sufficient permissions/);
+    assert.match(e.message, /integration key or staff access token/);
     assert.equal(e.stack.includes(config.key), false);
     assert.equal(e.config, undefined);
     assert.equal(e.response, undefined);
