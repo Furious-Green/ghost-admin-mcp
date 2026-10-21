@@ -50,8 +50,12 @@ opt-in bounded error sanitizers), preserving receiver and concurrent isolation.
 Install the compatibility dispatcher only after factory registration. Registry
 is WeakMap keyed by server, not global cross-client state. Enabled/update/remove/
 rename operations on registered tools synchronize our registry so protocol reads
-cannot call disabled/removed/stale entries. Do not expose new task/HTTP features;
-task-augmented requests fail explicitly before callbacks. Normal result/output
+cannot call disabled/removed/stale entries. Renames use fresh public
+registrations/removals behind a stable handle because
+SDK rename closures retain the original key. Discovery and freed-name reuse
+must stay synchronized, including repeated renames and removal after renaming.
+Do not expose new task/HTTP features; task-augmented requests fail explicitly
+before callbacks. Normal result/output
 contract remains the existing static factory surface; no output schemas added.
 
 Retain validation resource protection when bypassing the newer SDK's call

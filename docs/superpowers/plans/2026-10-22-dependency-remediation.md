@@ -43,7 +43,7 @@ unknown tool and unchanged callback isError, no HTTP.
 ### Task 2: Public tool compatibility dispatcher
 **Files:** create src/tools/toolDispatch.ts; modify registerStrictTool/createServer;
 extend tool-compatibility tests and dependency-policy imports as needed.
-**Interfaces:** trackRegisteredTool(server,name,registered,makeSchema):void;
+**Interfaces:** trackRegisteredTool(server,name,registered,makeSchema):RegisteredTool;
 installToolDispatcher(server):void; exported MAX_TOOL_INPUT_ELEMENTS=10000.
 Registry uses current schema and callback, wrapped public update keeps keys
 consistent; high-level tool list unchanged. No SDK private field access.
@@ -96,5 +96,18 @@ work on consumers or artifact publication; public notes limited to this fork.
 - Current README stale SDK-annotation/security claims updated; historical
   completed evidence untouched. No consumer-specific information added to public
   notes; no identity, tag, publication or service changes. Slice2 remains open.
-- Pending independent whole-branch review, final verification and reference-only
-  PR for#12 (not an issue-closing link).
+- Independent read-only whole-branch review d117c7b..a30a6af verified405 tests,
+  typecheck/full+production audit0 and no consumer-specific data in public notes.
+  One Important finding: SDK rename closures retain original registration keys,
+  so repeated rename/removal diverged between registry and discovery.
+- Regression for repeated rename/discovery/disable/enable/schema+callback update/
+  removal/name reuse/stale removal/re-add observed RED. One fix pass uses fresh
+  public registration/removal on rename behind a stable public handle; never SDK
+  private maps or dependency monkeypatches. Regression and full **406/406** suite
+  GREEN after clean ci/typecheck; both fresh audits0 and diff check pass.
+- No deferred findings or second independent review. Review did not itself
+  perform clean reinstall or certify historical RED runs; final clean-ci and
+  regression evidence above was executed here. No live Ghost, publication/artifact
+  assessment or comprehensive security assurance claimed. Packaging remains open.
+- Remaining final verification and reference-only PR for#12 (no closing link),
+  CI checks, no tag/release/publication or external service changes.

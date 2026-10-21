@@ -38,7 +38,10 @@ MCP InvalidParams protocol errors; callback failures are isError text results.
 A per-server registry and the public setRequestHandler API implement this boundary;
 SDK private maps are not accessed. SDK registration/discovery/resources/prompts
 remain intact. Tool updates preserve strict schemas and opted-in bounded error
-diagnostics, names/removal/enable state and current callbacks. No task execution
+diagnostics, names/removal/enable state and current callbacks. Repeated renames
+use fresh public registrations/removals behind a stable handle, avoiding the
+SDK's captured-original-name discovery behavior. Removed names can be reused
+without stale entries. No task execution
 or additional transport feature is introduced.
 
 Before tool schema parsing, an iterative guard permits at most **10000 counted
@@ -68,7 +71,7 @@ npm audit --omit=dev --json
 ```
 
 Offline tests cover 54 tools, 7 resource URIs, one prompt and 8 delete confirmations;
-the maintenance baseline is 405 passing tests. Local policy tests check installed
+the maintenance baseline is 406 passing tests. Local policy tests check installed
 versions against the committed lock and known patched floors. They are not a
 substitute for a fresh audit: new advisories can appear after this date. Audit
 commands require npm registry access; contract tests use no live Ghost service.

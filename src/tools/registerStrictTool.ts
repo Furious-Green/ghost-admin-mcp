@@ -26,6 +26,5 @@ export function registerStrictTool<Args extends ZodRawShape>(
         return validationError === undefined ? schema : boundedValidationSchema(schema, validationError);
     };
     registered.inputSchema = makeSchema(shape);
-    trackRegisteredTool(server, name, registered, makeSchema);
-    return registered;
+    return trackRegisteredTool(server, name, registered, makeSchema);
 }

@@ -65,3 +65,23 @@ test('schema updates preserve opted-in bounded error diagnostics',async t=>{
     assert.ok(error.message.length<512);assert.ok(!error.message.includes('PRIVATE_INPUT_MARKER'));assert.match(error.message,/Bounded validation failure/);return true;
   });assert.equal(r.requests.length,0);
 });
+
+test('repeated tool renames stay synchronized with discovery removal and name reuse',async t=>{
+  const r=makeRecordingClient(),m=await openMcpHarness(r.client);t.after(m.close);
+  const {z}=require('zod'),{registerStrictTool}=require('../build/tools/registerStrictTool.js');
+  const tool=registerStrictTool(m.server,'rename_original','test',{value:z.string()},async args=>({content:[{type:'text',text:args.value}]}));
+  const names=async()=>{const tools=[];let cursor;do{const page=await m.mcpClient.listTools(cursor?{cursor}:{});tools.push(...page.tools.map(t=>t.name));cursor=page.nextCursor}while(cursor);return tools.filter(n=>n.startsWith('rename_')).sort()};
+  tool.update({name:'rename_second'});tool.update({name:'rename_third'});
+  assert.deepEqual(await names(),['rename_third']);
+  assert.equal((await m.mcpClient.callTool({name:'rename_third',arguments:{value:'ok'}})).content[0].text,'ok');
+  tool.disable();assert.deepEqual(await names(),[]);tool.enable();assert.deepEqual(await names(),['rename_third']);
+  tool.update({paramsSchema:{count:z.number()},callback:async args=>({content:[{type:'text',text:String(args.count)}]})});
+  assert.equal((await m.mcpClient.callTool({name:'rename_third',arguments:{count:3}})).content[0].text,'3');
+  tool.remove();assert.deepEqual(await names(),[]);
+  const replacement=registerStrictTool(m.server,'rename_third','replacement',{},async()=>({content:[{type:'text',text:'replacement'}]}));
+  tool.remove();assert.deepEqual(await names(),['rename_third']);
+  assert.equal((await m.mcpClient.callTool({name:'rename_third',arguments:{}})).content[0].text,'replacement');
+  replacement.remove();tool.update({name:'rename_readded'});assert.deepEqual(await names(),['rename_readded']);
+  assert.equal((await m.mcpClient.callTool({name:'rename_readded',arguments:{count:4}})).content[0].text,'4');
+  assert.equal(r.requests.length,0);
+});

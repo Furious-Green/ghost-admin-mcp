@@ -1,6 +1,6 @@
-import type {McpServer, RegisteredTool} from '@modelcontextprotocol/sdk/server/mcp.js';
+import type {McpServer, RegisteredTool, ToolCallback} from '@modelcontextprotocol/sdk/server/mcp.js';
 import {CallToolRequestSchema, ErrorCode, McpError} from '@modelcontextprotocol/sdk/types.js';
-import type {z, ZodRawShape} from 'zod';
+import {z, type ZodRawShape} from 'zod';
 
 export const MAX_TOOL_INPUT_ELEMENTS = 10000;
 const registries = new WeakMap<McpServer, Map<string, RegisteredTool>>();
@@ -32,23 +32,53 @@ function withinInputBudget(input: unknown): boolean {
     } catch { return false; }
 }
 
-export function trackRegisteredTool(server: McpServer, name: string, tool: RegisteredTool, makeSchema: (shape: ZodRawShape) => z.AnyZodObject): void {
+export function trackRegisteredTool(server: McpServer, name: string, initial: RegisteredTool, makeSchema: (shape: ZodRawShape) => z.AnyZodObject): RegisteredTool {
     const tools = registry(server);
-    tools.set(name, tool);
+    let handle = initial;
     let current: string | null = name;
-    const update = tool.update.bind(tool);
-    tool.update = updates => {
+    const update = (updates: Parameters<RegisteredTool['update']>[0]) => {
         const next = updates.name === undefined ? current : updates.name || null;
-        if (next && tools.has(next) && tools.get(next) !== tool) throw new Error('Duplicate Ghost tool name.');
+        if (next && tools.has(next) && tools.get(next) !== front) throw new Error('Duplicate Ghost tool name.');
         const schema = updates.paramsSchema === undefined ? undefined : makeSchema(updates.paramsSchema as ZodRawShape);
-        update(updates);
-        if (schema) tool.inputSchema = schema;
-        if (next !== current) {
+        const {name: _name, ...fields} = updates;
+        if (next !== current && next) {
+            // SDK rename closures retain their original registration key. Use a
+            // fresh public registration, never its rename path or private maps.
+            // Create first so name collisions cannot remove the existing tool.
+            const callback = (updates.callback ?? handle.handler) as ToolCallback<z.AnyZodObject>;
+            if (typeof callback !== 'function') throw new Error('Task handlers are not supported.');
+            const replacement = server.registerTool(next, {
+                title: updates.title ?? handle.title,
+                description: updates.description ?? handle.description,
+                inputSchema: (schema ?? handle.inputSchema) as z.AnyZodObject,
+                outputSchema: updates.outputSchema === undefined ? handle.outputSchema : z.object(updates.outputSchema as ZodRawShape),
+                annotations: updates.annotations ?? handle.annotations,
+                _meta: updates._meta ?? handle._meta,
+            }, callback);
+            if (!(updates.enabled ?? handle.enabled)) replacement.disable();
+            if (current) handle.remove();
+            handle = replacement;
+        } else {
+            handle.update(fields);
+            if (schema) handle.inputSchema = schema;
+            if (next !== current && current) handle.remove();
+        }
+        if (current !== next) {
             if (current) tools.delete(current);
-            if (next) tools.set(next, tool);
+            if (next) tools.set(next, front);
             current = next;
         }
     };
+    const methods = {update, enable: () => update({enabled: true}), disable: () => update({enabled: false}), remove: () => update({name: null})};
+    // Stable public handle: direct schema/metadata assignments and lifecycle calls
+    // always address the current SDK registration, even after rename/re-add.
+    const front = new Proxy(initial, {
+        get: (_target, property) => typeof property === 'string' && Object.hasOwn(methods, property)
+            ? methods[property as keyof typeof methods] : Reflect.get(handle, property),
+        set: (_target, property, value) => Reflect.set(handle, property, value),
+    });
+    tools.set(name, front);
+    return front;
 }
 
 // MCP1.32 catches argument/name errors into tool results. This public-API
