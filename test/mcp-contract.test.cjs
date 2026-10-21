@@ -116,14 +116,15 @@ test('browse text preserves server metadata for nonempty and empty final pages',
   assert.deepEqual(JSON.parse(empty.content[0].text), {data: [], meta: {pagination: {...pagination, page: 2, next: null}}});
 });
 
-test('known issue #11: all resource handlers return placeholders without Ghost reads', async t => {
+test('all resource handlers return actual client JSON rather than placeholder text', async t => {
   const {mcpClient, requests} = await harness(t);
   for (const [uri, label] of [['user://abc123', 'User'], ['member://abc123', 'Member'], ['tier://abc123', 'Tier'], ['offer://abc123', 'Offer'], ['newsletter://abc123', 'Newsletter'], ['post://abc123', 'Post'], ['blog://info', 'Blog info']]) {
     const output = await mcpClient.readResource({uri});
-    assert.equal(output.contents[0].mimeType, 'text/plain');
-    assert.equal(output.contents[0].text, uri === 'blog://info' ? 'Blog info resource requested' : `${label} resource requested for ID: abc123`);
+    assert.equal(output.contents[0].mimeType, 'application/json');
+    assert.equal(typeof JSON.parse(output.contents[0].text).data,'object');
+    assert.ok(!output.contents[0].text.includes('resource requested'));
   }
-  assert.equal(requests.length, 0);
+  assert.equal(requests.length, 7);
 });
 
 test('prompt uses the injected post reader and retains the existing bounded HTML preview', async t => {
