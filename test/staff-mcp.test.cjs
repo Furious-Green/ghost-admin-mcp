@@ -14,6 +14,16 @@ const calls = [
   ['invites_delete', {id: 'abc123'}, 'invites', 'Invite with id abc123 deleted.'],
   ['roles_browse', {permissions: 'assign'}, 'roles', [{id: 'one'}]],
 ];
+test('staff discovery distinguishes integration-allowed operations from staff-only routes',async t=>{
+  const r=await harness(t),{tools}=await r.mcpClient.listTools();
+  for(const name of ['invites_add','roles_browse']){
+    const description=tools.find(tool=>tool.name===name).description;
+    assert.match(description,/integration/i);
+    assert.doesNotMatch(description,/requires a staff access token/i);
+  }
+  for(const name of ['invites_browse','invites_delete'])assert.match(tools.find(tool=>tool.name===name).description,/staff access token/i);
+  assert.equal(r.requests.length,0);
+});
 test('staff MCP discovery omits all three nonexistent tools and sends no HTTP', async t => {
   const r = await harness(t);
   let cursor; const tools = [];

@@ -59,12 +59,15 @@ test('invite creation requires exactly one matching entity, never a fabricated c
 });
 
 for (const [family, op, args] of cases) test(`${family}.${op} sanitizes failures with safe staff permission guidance and one attempt`, async () => {
-  for (const status of [403, 404, 409]) {
+  for (const status of [401, 403, 404, 409]) {
     const r = makeRecordingClient();
     r.enqueueError({response: {status, data: {errors: [{type: 'NoPermissionError', message: 'SECRET'}]}}, request: 'SECRET'});
     await assert.rejects(r.client[family][op](args), e => {
       assert.match(e.message, new RegExp(`Ghost ${family} ${op} failed \\(HTTP ${status}\\)`));
-      if (status === 403) assert.match(e.message, /staff access token with sufficient permissions/);
+      if ([401,403].includes(status)) {
+        if(family==='invites'&&op!=='add')assert.match(e.message,/staff access token with sufficient permissions/);
+        else {assert.match(e.message,/integration key or staff access token/i);assert.doesNotMatch(e.message,/may require a staff/)}
+      }
       assert.equal(e.statusCode, status);
       assert.equal(e.name, 'NoPermissionError');
       assert.equal(e.response, undefined);
