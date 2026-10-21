@@ -3,8 +3,11 @@
 This public fork's manifest is `ghost-admin-mcp`, with `private: true` to prevent
 accidental npm publication. That flag does **not** make the repository private.
 The executable remains `ghost-mcp`, and existing MCP settings/tool names remain.
-Version `0.2.0` is inherited metadata, **not a newly published fork release**.
-Use an approved full commit SHA and checksums for identity. No npm package, tag,
+Version `0.1.0` starts an independent version line for this fork, rather than
+continuing upstream's `0.2.0`. MCP initialization reports the package version.
+This numbering reset changes neither Git history nor upstream attribution and
+does **not** create a published package or tagged release.
+Use an approved full commit SHA and checksums for exact artifact identity. No npm package, tag,
 release, deployment or consumer switch is automatically created by these steps.
 
 MIT and the original Fanyang Meng copyright/author are retained. This fork is

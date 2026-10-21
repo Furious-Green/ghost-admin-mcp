@@ -26,6 +26,8 @@ async function smoke(cwd, source) {
     const protocolVersion = require(path.join(source, 'node_modules/@modelcontextprotocol/sdk/dist/cjs/types.js')).LATEST_PROTOCOL_VERSION;
     const initialized = await cli.request('initialize', {protocolVersion, capabilities: {}, clientInfo: {name: 'artifact-verification', version: '1'}});
     assert.equal(initialized.serverInfo.name, 'ghost-mcp-ts');
+    const manifest = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8'));
+    assert.equal(initialized.serverInfo.version, manifest.version);
     cli.notify('notifications/initialized');
     const names = [];
     let cursor;
@@ -46,7 +48,7 @@ async function smoke(cwd, source) {
     assert.deepEqual(prompts.prompts.map(prompt => prompt.name), ['summarize-post']);
     assert.equal(cli.requests.length, 0);
     assert.ok(!cli.stderr().includes('0'.repeat(64)));
-    return {tools: names.length, resourceTemplates: 6, resources: 1, prompts: 1, ghostRequests: 0};
+    return {version: initialized.serverInfo.version, tools: names.length, resourceTemplates: 6, resources: 1, prompts: 1, ghostRequests: 0};
   } finally {
     for (const cleanup of cleanups.reverse()) await cleanup();
   }

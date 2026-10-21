@@ -8,8 +8,9 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 
 The manifest is `ghost-admin-mcp`; `private: true` prevents accidental npm
 publication, not public repository access. MIT/upstream attribution and the
-`ghost-mcp` executable are retained. Inherited version `0.2.0` is not a new fork
-release: use a reviewed full commit SHA. See [pinned source/runtime artifacts and
+`ghost-mcp` executable are retained. Version `0.1.0` starts this fork's independent
+version line; MCP reports the same package version. This does not imply a published
+package or tagged release: use a reviewed full commit SHA. See [pinned source/runtime artifacts and
 rollback](docs/artifacts.md) and the [coverage/version/credential matrix](docs/coverage.md).
 
 ![demo](./assets/ghost-mcp-demo.gif)

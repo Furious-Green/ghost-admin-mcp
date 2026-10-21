@@ -100,7 +100,7 @@ Files: README.md, docs/coverage.md, docs/artifacts.md, this plan outcome.
 
 | Criterion | Evidence |
 | --- | --- |
-| Fork identity, no upstream npm ownership | manifest/lock name, private guard, repository metadata; inherited version documented |
+| Fork identity, no upstream npm ownership | manifest/lock name, private guard, repository metadata; independent version documented |
 | License and attribution | MIT manifest matches unchanged original LICENSE; original author retained and provenance documented |
 | Locked clean source/runtime build/start | verify:artifacts source git archive -> npm ci build; independent production-only runtime install with local resolution checks |
 | Offline CI discovery | existing410 suite plus isolation regression =411; CI adds artifact gate, dummy credentials and zero Ghost requests |
@@ -114,3 +114,15 @@ supplies its remaining release-preparation gate. Closing links for #12 and the
 original scoped tracker #1 are justified only by this documented scope, not full
 Admin API parity or live certification. #25 remains separate and open. No PR
 merge or issue closure is performed here; CI/PR links are recorded externally.
+
+## User-approved version amendment
+
+After PR #26 opened, user explicitly selected **0.1.0** as this fork's independent
+version line, superseding the inherited0.2.0 decision above. Update manifest and
+root lock versions; read the manifest version for MCP initialization (previously
+hardcoded1.0.0). Keep server/executable/tool names and Git history unchanged.
+Current documentation distinguishes a version assignment from publication/tagging.
+Manifest/lock and actual stdio regressions observed RED at0.2.0/1.0.0 before the
+change. Artifact smoke now checks and records the same package/handshake version
+for both isolated source and production runtime installs. No tag/publication or
+new error semantics are authorized. Refresh tests/artifacts and PR evidence.

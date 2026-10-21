@@ -19,8 +19,12 @@ import {registerThemeTools} from './tools/themes';
 import {registerPrompts} from './prompts';
 import {installToolDispatcher} from './tools/toolDispatch';
 
+// src/ and build/ are siblings of the manifest in both source and runtime
+// installations. Keep MCP identification aligned with this fork's package.
+const {version} = require('../package.json') as {version: string};
+
 export function createServer(client: GhostClient): McpServer {
-    const server = new McpServer({name: 'ghost-mcp-ts', version: '1.0.0'}, {
+    const server = new McpServer({name: 'ghost-mcp-ts', version}, {
         capabilities: {resources: {}, tools: {}, prompts: {}, logging: {}},
     });
 

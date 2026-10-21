@@ -10,7 +10,9 @@ consumer guidance. #25's error migration remains separate.
 
 ## Identity
 Use unscoped `ghost-admin-mcp`, `private: true`, public repository/bugs/homepage
-metadata. Retain inherited version 0.2.0 as metadata, not a released fork version;
+metadata. User-approved follow-up resets this fork to 0.1.0, superseding the
+initial inherited-version decision; MCP initialization reads the same manifest
+version. This does not create a published/tagged release or alter Git history;
 full commit identifies this preparation. Remove publishConfig; retain original
 author and MIT copyright/license, explicitly distinguish fork maintainers from
 upstream authorship. Keep ghost-mcp executable and all settings/protocol names.

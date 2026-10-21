@@ -1,7 +1,7 @@
 {
     "name": "ghost-admin-mcp",
     "private": true,
-    "version": "0.2.0",
+    "version": "0.1.0",
     "description": "Public Ghost Admin MCP fork with strict inputs and offline contract verification",
     "repository": {"type": "git", "url": "https://github.com/Furious-Green/ghost-admin-mcp.git"},
     "bugs": {"url": "https://github.com/Furious-Green/ghost-admin-mcp/issues"},
