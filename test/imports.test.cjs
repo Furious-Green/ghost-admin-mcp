@@ -19,8 +19,8 @@ test('tools and server construction do not load credentials, connect, or exit on
     for (const module of ['config', 'ghostApi', 'client/sdkAdapter', 'client/nativeCopy', 'client/nativeRequest',
       'client/nativeAdmin', 'client/nativeResponses', 'client/commerceClient', 'client/staffClient', 'client/responses', 'client/sdkRequest',
       'schemas/tiers', 'schemas/offers', 'schemas/staff', 'schemas/query', 'schemas/content', 'schemas/postDelivery', 'schemas/tags', 'schemas/accounts', 'client/contentRequest', 'client/accountRequest', 'tools/registerStrictTool', 'tools/registerAccountTools', 'tools/contentSchemas', 'prompts', 'resources',
-      'schemas/labels', 'client/labelsClient', 'client/siteClient',
-      ...['posts','pages','members','users','tags','tiers','offers','newsletters','invites','roles','webhooks','labels','site'].map(name => 'tools/' + name)]) {
+      'schemas/labels', 'schemas/images', 'client/labelsClient', 'client/siteClient', 'client/imageMultipart', 'client/imagesClient',
+      ...['posts','pages','members','users','tags','tiers','offers','newsletters','invites','roles','webhooks','labels','site','images'].map(name => 'tools/' + name)]) {
       require('./build/' + module + '.js');
     }
     const {makeRecordingClient} = require('./test/helpers/recordingClient.cjs');

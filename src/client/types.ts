@@ -10,6 +10,7 @@ import type {ToolInputs as InviteInputs} from '../tools/invites';
 import type {ToolInputs as RoleInputs} from '../tools/roles';
 import type {ToolInputs as WebhookInputs} from '../tools/webhooks';
 import type {LabelInputs} from '../schemas/labels';
+import type {ImageUploadInput} from '../schemas/images';
 import type {CollectionResponse, EntityResponse} from './responses';
 export type {GhostResponse, CollectionResponse, EntityResponse} from './responses';
 
@@ -39,6 +40,7 @@ export interface GhostClient {
     webhooks: ResourceClient<WebhookInputs>;
     labels: ResourceClient<LabelInputs>;
     site: ResourceClient<{read: Record<string, never>}>;
+    images: ResourceClient<{upload: ImageUploadInput}>;
 }
 
 export type SdkRequest = {
