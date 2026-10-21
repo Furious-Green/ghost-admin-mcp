@@ -17,9 +17,15 @@ const routes = {
     'invites.add': ['invites', 'POST', false, true],
     'invites.delete': ['invites', 'DELETE', true, false],
     'roles.browse': ['roles', 'GET', false, false],
+    'labels.browse': ['labels', 'GET', false, false],
+    'labels.read': ['labels', 'GET', true, false],
+    'labels.add': ['labels', 'POST', false, true],
+    'labels.edit': ['labels', 'PUT', true, true],
+    'labels.delete': ['labels', 'DELETE', true, false],
+    'site.read': ['site', 'GET', false, false, false, true],
 } as const;
 export type NativeOperation = keyof typeof routes;
-export type NativeInput = {id?: string; query?: QueryOptions; body?: unknown};
+export type NativeInput = {id?: string; slug?: string; query?: QueryOptions; body?: unknown};
 
 export function encodeNativeId(value: unknown): string {
     if (typeof value !== 'string' || !value.trim() || value === '.' || value === '..'
@@ -54,12 +60,16 @@ export function createNativeAdminRequest(config: GhostConfig, makeRequest?: Requ
     const execute = makeRequest ?? createNativeRequestExecutor();
     return async (operation: NativeOperation, input: NativeInput = {}): Promise<unknown> => {
         if (!Object.hasOwn(routes, operation)) throw new Error('Invalid Ghost native operation.');
-        const route: readonly [string, string, boolean, boolean, boolean?] = routes[operation];
-        const [resource, method, needsId, write, copy] = route;
+        const route: readonly [string, string, boolean, boolean, boolean?, boolean?] = routes[operation];
+        const [resource, method, needsId, write, copy, publicRead] = route;
         const label = operation.replace('.', ' ');
         const invalid: (field: string) => never = field => { throw new Error(`Invalid Ghost ${copy ? 'copy' : label} ${field}.`); };
         let segment = '';
-        if (needsId) {
+        if (input.slug !== undefined && operation !== 'labels.read') invalid('slug');
+        if (operation === 'labels.read' && Number(input.id !== undefined) + Number(input.slug !== undefined) !== 1) invalid('selector');
+        if (operation === 'labels.read' && input.slug !== undefined) {
+            try { segment = `slug/${encodeNativeId(input.slug)}`; } catch { invalid('slug'); }
+        } else if (needsId) {
             try { segment = encodeNativeId(input.id); } catch { invalid('id'); }
         }
         if (!write && input.body !== undefined) invalid('body');
@@ -73,17 +83,21 @@ export function createNativeAdminRequest(config: GhostConfig, makeRequest?: Requ
         const match = /^v(\d+)(?:\.(\d+))?$/.exec(config.version);
         if (!match || Number(match[1]) < 5) invalid('version');
         const version = match[2] === undefined ? `${config.version}.0` : config.version;
-        if (!/^[0-9a-f]{24}:[0-9a-f]{64}$/i.test(config.key)) invalid('key');
-        const [id, secret] = config.key.split(':');
-        const header = Buffer.from(JSON.stringify({alg: 'HS256', typ: 'JWT', kid: id})).toString('base64url');
-        const iat = Math.floor(Date.now() / 1000);
-        const payload = Buffer.from(JSON.stringify({iat, exp: iat + 300, aud: '/admin/'})).toString('base64url');
-        const signature = createHmac('sha256', Buffer.from(secret, 'hex')).update(`${header}.${payload}`).digest('base64url');
+        const headers: Record<string, string> = {Accept: 'application/json', 'Accept-Version': version,
+            ...(write ? {'Content-Type': 'application/json'} : {})};
+        if (!publicRead) {
+            if (!/^[0-9a-f]{24}:[0-9a-f]{64}$/i.test(config.key)) invalid('key');
+            const [id, secret] = config.key.split(':');
+            const header = Buffer.from(JSON.stringify({alg: 'HS256', typ: 'JWT', kid: id})).toString('base64url');
+            const iat = Math.floor(Date.now() / 1000);
+            const payload = Buffer.from(JSON.stringify({iat, exp: iat + 300, aud: '/admin/'})).toString('base64url');
+            const signature = createHmac('sha256', Buffer.from(secret, 'hex')).update(`${header}.${payload}`).digest('base64url');
+            headers.Authorization = `Ghost ${header}.${payload}.${signature}`;
+        }
         try {
             return await execute({url: path, method, params: input.query ?? {},
                 ...(write ? {data: input.body} : {}),
-                headers: {Accept: 'application/json', Authorization: `Ghost ${header}.${payload}.${signature}`,
-                    'Accept-Version': version, ...(write ? {'Content-Type': 'application/json'} : {})},
+                headers,
             });
         } catch (error) { throw safeError(label, error); }
     };

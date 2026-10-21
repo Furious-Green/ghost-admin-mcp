@@ -13,6 +13,7 @@ exports.makeRecordingClient = function makeRecordingClient() {
         return structuredClone(next.response);
       }
       const resource = new URL(request.url).pathname.split('/')[4];
+      if (resource === 'site') return {site: {title: 'Example', description: '', logo: null, url: config.url, version: '5.130'}};
       return request.method === 'GET' && !new URL(request.url).pathname.slice(1).split('/')[4]
         ? {[resource]: [structuredClone(entity)], meta: {pagination: structuredClone(pagination)}}
         : {[resource]: [structuredClone(entity)]};

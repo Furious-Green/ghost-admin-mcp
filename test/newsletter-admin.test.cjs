@@ -54,7 +54,7 @@ test('removed newsletter deletion is unknown and never silently archives or issu
   assert.equal(r.client.newsletters.delete,undefined);
   const tools=[];let cursor;
   do{const page=await r.mcpClient.listTools(cursor?{cursor}:{});tools.push(...page.tools);cursor=page.nextCursor}while(cursor);
-  assert.equal(tools.length,45);assert.equal(tools.some(t=>t.name==='newsletters_delete'),false);
+  assert.equal(tools.length,51);assert.equal(tools.some(t=>t.name==='newsletters_delete'),false);
   assert.match(tools.find(t=>t.name==='newsletters_add').description,/existing members/i);
   assert.match(tools.find(t=>t.name==='newsletters_add').description,/verification/i);
   assert.match(tools.find(t=>t.name==='newsletters_edit').description,/verification/i);

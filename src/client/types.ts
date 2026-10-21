@@ -9,6 +9,7 @@ import type {ToolInputs as NewsletterInputs} from '../tools/newsletters';
 import type {ToolInputs as InviteInputs} from '../tools/invites';
 import type {ToolInputs as RoleInputs} from '../tools/roles';
 import type {ToolInputs as WebhookInputs} from '../tools/webhooks';
+import type {LabelInputs} from '../schemas/labels';
 import type {CollectionResponse, EntityResponse} from './responses';
 export type {GhostResponse, CollectionResponse, EntityResponse} from './responses';
 
@@ -36,6 +37,8 @@ export interface GhostClient {
     invites: ResourceClient<InviteInputs>;
     roles: ResourceClient<RoleInputs>;
     webhooks: ResourceClient<WebhookInputs>;
+    labels: ResourceClient<LabelInputs>;
+    site: ResourceClient<{read: Record<string, never>}>;
 }
 
 export type SdkRequest = {

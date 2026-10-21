@@ -3,6 +3,8 @@ import {AsyncLocalStorage} from 'node:async_hooks';
 import {createNativeCopy} from './nativeCopy';
 import {createCommerceClients} from './commerceClient';
 import {createStaffClients} from './staffClient';
+import {createLabelClient} from './labelsClient';
+import {createSiteClient} from './siteClient';
 import {prepareContentRequest} from './contentRequest';
 import {prepareAccountRequest} from './accountRequest';
 import {normalizeCollection, normalizeEntity} from './responses';
@@ -79,6 +81,8 @@ export function createGhostClient(config: GhostConfig, options: {makeRequest?: R
         newsletters: {browse: method('newsletters', 'browse'), read: method('newsletters', 'read'),
             add: method('newsletters', 'add'), edit: method('newsletters', 'edit')},
         ...createStaffClients(config, options.makeRequest),
+        labels: createLabelClient(config, options.makeRequest),
+        site: createSiteClient(config, options.makeRequest),
         webhooks: {add: method('webhooks', 'add'), edit: method('webhooks', 'edit'), delete: method('webhooks', 'delete')},
     };
 }

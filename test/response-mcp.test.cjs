@@ -14,7 +14,7 @@ test('every data tool serializes one envelope while deletes keep their confirmat
   const r = await harness(t);
   const tools = []; let cursor;
   do {const page = await r.mcpClient.listTools(cursor ? {cursor} : {}); tools.push(...page.tools); cursor = page.nextCursor;} while (cursor);
-  assert.equal(tools.length, 45);
+  assert.equal(tools.length, 51);
   assert.deepEqual(tools.map(t => t.name).sort(), [...toolNames, ...additionalToolNames].sort());
   assert.equal(r.requests.length, 0);
   for (const tool of tools) {
@@ -23,10 +23,10 @@ test('every data tool serializes one envelope while deletes keep their confirmat
     assert.equal(tool.inputSchema.properties.meta, undefined);
   }
   const all = {...families, pages: {browse: {}, read: {id: 'abc123'}, add: {title: 'Page'}, edit: {id: 'abc123', updated_at: timestamp}, delete: {id: 'abc123'}, copy: {id: 'abc123'}}, posts: {...families.posts, copy: {id: 'abc123'}}};
-  const singular = {posts:'Post',pages:'Page',members:'Member',users:'User',tags:'Tag',newsletters:'Newsletter',webhooks:'Webhook',invites:'Invite'};
+  const singular = {posts:'Post',pages:'Page',members:'Member',users:'User',tags:'Tag',newsletters:'Newsletter',webhooks:'Webhook',invites:'Invite',labels:'Label'};
   let dataCount = 0, deleteCount = 0;
   for (const [family, operations] of Object.entries(all)) for (const [op, args] of Object.entries(operations)) {
-    r.enqueueResponse(op === 'delete' ? '' : {[family]: [{id:'one',meta:{entity:true},data:'entity field'}],meta:{example:{retained:true}}});
+    r.enqueueResponse(op === 'delete' ? '' : {[family]: family === 'site' ? {id:'one',meta:{entity:true},data:'entity field'} : [{id:'one',meta:{entity:true},data:'entity field'}],meta:{example:{retained:true}}});
     const before = r.requests.length;
     const response = await r.mcpClient.callTool({name:`${family}_${op}`,arguments:structuredClone(args)});
     assert.notEqual(response.isError, true);
@@ -40,9 +40,9 @@ test('every data tool serializes one envelope while deletes keep their confirmat
       assert.deepEqual(JSON.parse(response.content[0].text), {data: op === 'browse' ? [{id:'one',meta:{entity:true},data:'entity field'}] : {id:'one',meta:{entity:true},data:'entity field'},meta:{example:{retained:true}}});
     }
   }
-  assert.equal(dataCount, 38);
-  assert.equal(deleteCount, 7);
-  assert.equal(r.requests.length, 45);
+  assert.equal(dataCount, 43);
+  assert.equal(deleteCount, 8);
+  assert.equal(r.requests.length, 51);
 });
 
 test('MCP callers manually walk first middle final and empty pages without hidden requests', async t => {

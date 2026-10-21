@@ -11,7 +11,7 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 ## Features
 
 - Ghost Admin API requests with `@tryghost/admin-api` plus focused authenticated native adapters
-- Tools for posts, pages, members, users, tags, newsletter configuration, webhooks, tiers, offers, staff invites and roles
+- Tools for posts, pages, members, member labels, public site information, users, tags, newsletter configuration, webhooks, tiers, offers, staff invites and roles
 - Native Ghost post/page copying, creating drafts without client-side reconstruction
 - Explicit Ghost query filters and resource-specific pagination, including supported `limit: "all"`
 - Strict tool inputs and typed-client validation with resource-specific queries, nullable clearing and revision controls
@@ -21,7 +21,7 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 
 ## Current limitations
 
-45 tools are registered; registration is not proof of live API support:
+51 tools are registered; registration is not proof of live API support:
 
 - Tiers/offers/invites/roles use native adapters for twelve supported operations. Contracts are verified against documentation and Ghost 5.130.0 source, not a live server; permissions and version differences still apply.
 - Pagination is returned when Ghost supplies it; this server never invents pagination or automatically fetches additional pages. Available paging controls remain resource-specific.
@@ -157,7 +157,7 @@ API schema lengths/nullability and query options were checked against **Ghost 5.
 
 ## Strict remaining-resource input migration
 
-The second #6 slice makes members/users/newsletters/webhooks strict at both MCP and typed-client boundaries. Nested member label/newsletter objects are strict too. Native tiers/offers/invites/roles remain strict, now with safe-integer paging, tighter enums/ranges and malformed-options rejection. Unknown inputs have no passthrough. Refresh discovery; output envelopes and remaining delete text are unchanged. The current inventory is **45 names** after removing unsupported newsletter deletion.
+The second #6 slice makes members/users/newsletters/webhooks strict at both MCP and typed-client boundaries. Nested member label/newsletter objects are strict too. Native tiers/offers/invites/roles remain strict, now with safe-integer paging, tighter enums/ranges and malformed-options rejection. Unknown inputs have no passthrough. Refresh discovery; output envelopes and remaining delete text are unchanged. The current inventory is **51 names**, including the six label/site tools below and excluding unsupported newsletter deletion.
 
 | Resource | Browse queries | Read queries/selectors | Write queries |
 | --- | --- | --- | --- |
@@ -251,6 +251,74 @@ These contracts use Ghost 5.130.0 source and public sending/email-only/newslette
 documentation; the `Accept-Version: v5.0` minimum header does not establish support
 for every Ghost 5.x minor. No live email or compatibility test is claimed.
 
+### Member labels and public site information
+
+Standalone labels organize members, not post tags. All five tools use strict
+inputs and the existing response envelope: browse returns `{data:[...],meta?}`;
+read/add/edit return `{data:{...},meta?}`. Pagination and `count.members` are
+returned as supplied, including zero counts and `next:null`. Each browse call
+fetches one page; inspect pagination and request the next page explicitly.
+
+| Tool | Inputs and query controls |
+| --- | --- |
+| `labels_browse` | Optional filter, order, fields CSV, include=`count.members`, positive safe integer page/limit or limit=`all` |
+| `labels_read` | Exactly one id/slug; optional filter, fields, include=`count.members` |
+| `labels_add` | Required nonblank name, optional nonblank slug; optional include=`count.members` |
+| `labels_edit` | Required id, optional name/slug; optional include=`count.members` |
+| `labels_delete` | Required id only |
+| `site_read` | No inputs (`{}`) |
+
+Label name/slug writes have max191 characters; null and generated/audit fields
+are rejected. Ghost generates/normalizes slugs. Read selectors are safely encoded
+once and reject traversal, delimiters, escapes and control characters. Query
+controls never enter label bodies. Like other native resources, direct-client
+label queries belong in the flat input; nonempty/malformed separate options are
+rejected. Site accepts only empty input/options objects. No URL overrides exist.
+
+Examples: `labels_browse` with `{"include":"count.members","limit":50,"page":1}`,
+`labels_read` with `{"slug":"vip"}`, and `labels_add` with `{"name":"VIP"}`.
+Existing member assignment inputs are unchanged: `members_edit` accepts
+`{"id":"MEMBER_ID","labels":[{"name":"VIP","slug":"vip"}],"newsletters":[{"id":"NEWSLETTER_ID"}]}`.
+Member labels remain name/optional nullable slug objects, not standalone label
+IDs; no automatic lookup occurs. Empty relationship arrays are explicit
+replacement requests, not merges. Ghost governs assignment/subscription effects.
+
+**Deletion is irreversible:** `labels_delete` removes the label and its member
+assignments, **not the members**. It returns `Label with id ID deleted.` after
+Ghost succeeds, never retries or simulates archival, and does not send member
+deletion requests. Assignment cleanup is verified in Ghost source, not a claim
+that offline fixtures executed a real member database mutation.
+
+`site_read` returns real **public** title, description, logo, frontend URL and
+version from `/ghost/api/admin/site/` as `{data:{...},meta?}`. Ghost returns a
+singleton object, not an array. Nullable logo and additional public fields are
+preserved. The logo may be relative; the frontend URL may differ from the Admin
+URL; version is retained literally (typically major.minor). None of these values
+are fabricated from local configuration or followed as new request destinations.
+
+Ghost's site endpoint is **unauthenticated**: this request sends no Authorization
+header. The MCP server still requires its existing key/configuration for other
+tools; there is no anonymous-server mode. The request uses only the configured
+site URL/subdirectory, refuses redirects, times out after30 seconds and never
+retries. Site read is **not general settings access or editing**. `blog://info`
+and the other placeholder MCP resources remain deferred to #11.
+
+| Version evidence | Labels | Public site |
+| --- | --- | --- |
+| Ghost **5.130.0** source | CRUD/ID+slug routes, option allowlists, count relation, slug generation, assignment detachment verified | Public route, permissions=false, singleton serializer and public fields verified |
+| Earlier5.x / other majors | Not verified by this change | Not verified by this change |
+| Live installations | No live compatibility or credential-permission test | No live compatibility test |
+
+Reference: [labels docs](https://docs.ghost.org/admin-api/labels/overview),
+[site docs](https://docs.ghost.org/admin-api/site/overview), baseline
+[labels endpoint](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/server/api/endpoints/labels.js),
+[label model](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/server/models/label.js),
+and [site serializer](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/server/api/endpoints/utils/serializers/output/site.js).
+Current documentation alone is not evidence of older-version support. The
+minimum `Accept-Version: v5.0` header does not promise every5.x minor. Ghost
+enforces label permissions; permission/version failures remain errors rather
+than empty success. No automatic site-version probe or auth escalation is added.
+
 ## Available Resources
 
 The following entity families have registered tool names (see the limitations above; the separately registered MCP resources are placeholders):
@@ -269,7 +337,7 @@ The following entity families have registered tool names (see the limitations ab
 
 ## Available Tools
 
-Below is an inventory of the 45 registered tool names, not a full API coverage guarantee. Permissions and Ghost version may restrict operations.
+Below is an inventory of the 51 registered tool names, not a full API coverage guarantee. Permissions and Ghost version may restrict operations.
 
 ### Posts
 - **Browse Posts**: List posts with optional filters, pagination, and ordering.
@@ -322,12 +390,21 @@ Requests use native POST `/posts/{id}/copy/` and `/pages/{id}/copy/` with no bod
 - **Edit Member**: Update member details.
 - **Delete Member**: Remove a member.
 
+### Member labels
+- **Browse Labels** (`labels_browse`): List/filter labels with explicit paging and optional member counts.
+- **Read Label** (`labels_read`): Retrieve by exactly one ID or slug.
+- **Add Label** (`labels_add`): Create a named label, with optional slug.
+- **Edit Label** (`labels_edit`): Update label name/slug by ID.
+- **Delete Label** (`labels_delete`): Remove the label and assignments, not members.
+
+### Site information
+- **Read Site** (`site_read`): Read public site details without sending credentials; no settings editing.
+
 ### Newsletters
 - **Browse Newsletters**: List newsletters.
 - **Read Newsletter**: Retrieve a newsletter by ID.
 - **Add Newsletter**: Create a new newsletter.
 - **Edit Newsletter**: Update newsletter details.
-- **Delete Newsletter**: Legacy registration; no matching Ghost 5.130.0 endpoint. Capability decision pending #7; do not assume deletion support.
 
 ### Offers
 - **Browse Offers**: List offers with optional filter (no pagination/order).
