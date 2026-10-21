@@ -11,7 +11,7 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 ## Features
 
 - Ghost Admin API requests with `@tryghost/admin-api` plus focused authenticated native adapters
-- Tools for posts, pages, members, member labels, public site information, users, tags, newsletter configuration, webhooks, tiers, offers, staff invites and roles
+- Tools for posts, pages, bounded image uploads, members, member labels, public site information, users, tags, newsletter configuration, webhooks, tiers, offers, staff invites and roles
 - Native Ghost post/page copying, creating drafts without client-side reconstruction
 - Explicit Ghost query filters and resource-specific pagination, including supported `limit: "all"`
 - Strict tool inputs and typed-client validation with resource-specific queries, nullable clearing and revision controls
@@ -21,7 +21,7 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 
 ## Current limitations
 
-51 tools are registered; registration is not proof of live API support:
+52 tools are registered; registration is not proof of live API support:
 
 - Tiers/offers/invites/roles use native adapters for twelve supported operations. Contracts are verified against documentation and Ghost 5.130.0 source, not a live server; permissions and version differences still apply.
 - Pagination is returned when Ghost supplies it; this server never invents pagination or automatically fetches additional pages. Available paging controls remain resource-specific.
@@ -157,7 +157,7 @@ API schema lengths/nullability and query options were checked against **Ghost 5.
 
 ## Strict remaining-resource input migration
 
-The second #6 slice makes members/users/newsletters/webhooks strict at both MCP and typed-client boundaries. Nested member label/newsletter objects are strict too. Native tiers/offers/invites/roles remain strict, now with safe-integer paging, tighter enums/ranges and malformed-options rejection. Unknown inputs have no passthrough. Refresh discovery; output envelopes and remaining delete text are unchanged. The current inventory is **51 names**, including the six label/site tools below and excluding unsupported newsletter deletion.
+The second #6 slice makes members/users/newsletters/webhooks strict at both MCP and typed-client boundaries. Nested member label/newsletter objects are strict too. Native tiers/offers/invites/roles remain strict, now with safe-integer paging, tighter enums/ranges and malformed-options rejection. Unknown inputs have no passthrough. Refresh discovery; output envelopes and remaining delete text are unchanged. The current inventory is **52 names**, including the six label/site tools and bounded image upload below, and excluding unsupported newsletter deletion.
 
 | Resource | Browse queries | Read queries/selectors | Write queries |
 | --- | --- | --- | --- |
@@ -319,6 +319,77 @@ minimum `Accept-Version: v5.0` header does not promise every5.x minor. Ghost
 enforces label permissions; permission/version failures remain errors rather
 than empty success. No automatic site-version probe or auth escalation is added.
 
+### Bounded image upload for remote clients
+
+`images_upload` accepts image bytes supplied by the caller, not a path on the
+MCP client or server and not a URL to download. It writes a file to configured
+Ghost storage; it does **not** publish content or assign the image to a post.
+
+| Input | Contract |
+| --- | --- |
+| `base64` (required) | Canonical standard RFC4648 base64, with required padding; no whitespace, URL-safe alphabet or data-URI prefix. Maximum **6,990,508 characters** and **5,242,880 decoded bytes (5 MiB)**. Empty input rejected. |
+| `filename` (required) | 1–120 ASCII characters, first alphanumeric, rest alphanumeric/space/dot/underscore/hyphen; matching extension required, case insensitive. No path separators, leading dot, quotes, percent syntax or controls. |
+| `mime_type` (required) | `image/jpeg` (.jpg/.jpeg), `image/png` (.png), `image/gif` (.gif), `image/webp` (.webp). |
+| `ref` (optional) | Nonblank opaque text, maximum1024 UTF16 code units, no ASCII controls/DEL. Never fetched or opened as a path. Omitted stays omitted in the multipart request. |
+
+Example MCP call using a small PNG (the caller supplies its bytes directly):
+
+```json
+{"name":"images_upload","arguments":{"filename":"pixel.png","mime_type":"image/png","base64":"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=","ref":"hero-image"}}
+```
+
+Example response (the server's returned values are authoritative):
+
+```json
+{"data":{"url":"https://storage.example/content/images/pixel.png","ref":"hero-image"}}
+```
+
+Returned URL/ref, including null or absent ref, extra entity fields and valid
+metadata are preserved literally. The client never fabricates a ref or fetches
+the returned URL; a storage adapter may return another origin or a relative URL.
+To use it, explicitly pass `data.url` into a later `posts_add`/`posts_edit`
+`feature_image` field (with the current `updated_at` for editing). Assigning an
+existing URL does not upload it; uploading does not assign it automatically.
+
+Type/extension/signature must match. **Signature checks identify headers only**:
+JPEG FF D8 FF, PNG eight-byte signature, GIF87a/GIF89a, WebP RIFF/WEBP header.
+They are not full image decoding, malware scanning, dimension/decompression
+limits or proof that a file is valid. Ghost still controls processing, permission,
+optimization, filename normalization and storage; bytes need not be stored
+unchanged. SVG/SVGZ/ICO/AVIF, themes/files/media, URL fetching and local filesystem
+reads are deliberately unsupported. Unknown input keys fail rather than disappear.
+Direct typed-client callers use `client.images.upload(input)`; separate options
+must be omitted or an empty strict object, not null/arrays/nonempty options.
+
+Multipart is built entirely in memory using `file` and optional `ref`, capped at
+**5 MiB+8192 bytes**, with no temporary files or local cleanup obligation on
+success/failure. Encoded and decoded size checks run before multipart dispatch;
+oversized encoded input is rejected before scanning/decoding. The default
+upload transport also caps response bytes at **65,536**, times out after30s,
+refuses redirects, disables proxy discovery, and never retries. Custom injected
+request executors receive the same validated multipart bytes but own their
+transport policies. Other SDK/native request policies remain unchanged.
+
+These are **per-request** application limits: the MCP transport has already
+received/parsed JSON before tool validation, concurrent callers consume additional
+memory, and transient encoded/decoded/multipart copies coexist. This is not a
+process-wide memory or denial-of-service guarantee. No local image decompression
+is attempted. On error/timeout, the upload may already exist in Ghost: inspect
+server state before manually retrying. No automatic retry, rollback or cleanup
+DELETE is performed; malformed/oversized replies are errors, not upload success.
+
+Contracts are source-verified against Ghost **5.130.0**
+[authenticated routes](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/server/web/api/endpoints/admin/routes.js),
+[upload validation](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/server/web/api/middleware/upload.js),
+[type allowlist](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/shared/config/overrides.json),
+[image endpoint](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/server/api/endpoints/images.js)
+and [response serializer](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/server/api/endpoints/utils/serializers/output/images.js),
+plus [public docs](https://docs.ghost.org/admin-api/images/overview).
+The5MiB cap is this MCP server's policy, not a universal Ghost limit. Minimum
+`Accept-Version: v5.0` is not proof of every5.x minor/newer-major support. All
+upload tests are mocked/allowlisted loopback; no live upload or credential
+permission compatibility is claimed.
+
 ## Available Resources
 
 The following entity families have registered tool names (see the limitations above; the separately registered MCP resources are placeholders):
@@ -337,7 +408,7 @@ The following entity families have registered tool names (see the limitations ab
 
 ## Available Tools
 
-Below is an inventory of the 51 registered tool names, not a full API coverage guarantee. Permissions and Ghost version may restrict operations.
+Below is an inventory of the 52 registered tool names, not a full API coverage guarantee. Permissions and Ghost version may restrict operations.
 
 ### Posts
 - **Browse Posts**: List posts with optional filters, pagination, and ordering.
@@ -399,6 +470,9 @@ Requests use native POST `/posts/{id}/copy/` and `/pages/{id}/copy/` with no bod
 
 ### Site information
 - **Read Site** (`site_read`): Read public site details without sending credentials; no settings editing.
+
+### Images
+- **Upload Image** (`images_upload`): Upload bounded supplied base64 JPEG/PNG/GIF/WebP bytes to configured Ghost storage; no local paths or URL fetching.
 
 ### Newsletters
 - **Browse Newsletters**: List newsletters.

@@ -39,7 +39,10 @@ test('image contract accepts exact five MiB and rejects over-limit before decodi
   assert.throws(()=>prepare({...input,base64:over}),/Invalid Ghost image upload/);
   const original=Buffer.from;let decoded=0;
   Buffer.from=function(...args){if(args[1]==='base64')decoded++;return Reflect.apply(original,this,args)};
-  try{assert.throws(()=>prepare({...input,base64:'A'.repeat(6990509)}),/Invalid Ghost image upload/)}finally{Buffer.from=original}
+  try{
+    assert.throws(()=>prepare({...input,base64:'A'.repeat(6990509)}),/Invalid Ghost image upload/);
+    assert.throws(()=>prepare({...input,base64:over}),/Invalid Ghost image upload/);
+  }finally{Buffer.from=original}
   assert.equal(decoded,0);
 });
 

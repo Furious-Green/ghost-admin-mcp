@@ -25,7 +25,7 @@ Add `images_upload` and typed `client.images.upload(input, options?)`;52 tools,
   required, case insensitive: image/jpeg -> .jpg/.jpeg, image/png -> .png,
   image/gif -> .gif, image/webp -> .webp. Never treat name as a local path.
 - `mime_type`: exact enum image/jpeg,image/png,image/gif,image/webp.
-- Optional `ref`: nonblank text <=1024 UTF16 code units with no controls; opaque
+- Optional `ref`: nonblank text <=1024 UTF16 code units with no ASCII controls/DEL; opaque
   multipart text field (not a URL/path to open). Omission stays omitted.
 
 Decoded bytes:1..**5,242,880 (5MiB)** inclusive. MIME/extension/signature must

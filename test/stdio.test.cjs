@@ -74,6 +74,13 @@ test('stdio initializes and discovers all tools without any Ghost HTTP calls', {
         assert.match(tool.description,/unauthenticated/i);
         assert.match(tool.description,/not general settings/i);
       }
+      if (tool.name === 'images_upload') {
+        assert.deepEqual(tool.inputSchema.properties.mime_type.enum,['image/jpeg','image/png','image/gif','image/webp']);
+        assert.equal(tool.inputSchema.properties.base64.maxLength,6990508);
+        assert.equal(tool.inputSchema.properties.path,undefined);
+        assert.equal(tool.inputSchema.properties.url,undefined);
+        assert.match(tool.description,/5 MiB/);assert.match(tool.description,/writes a file/);assert.match(tool.description,/never automatically retried/);
+      }
     }
     cursor = page.nextCursor;
   } while (cursor);

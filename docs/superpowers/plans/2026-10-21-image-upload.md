@@ -88,3 +88,23 @@ wire/transport/cleanup-docs/version/acceptance toTask3. All five focus classes
 have tests. NativeInput multipart restricted to one route; no arbitrary header
 override, and JSON/public behavior retains regression coverage. No split into
 unrelated uploads or filesystem convenience paths.
+
+## Execution evidence
+
+- Task1 three validation tests RED (missing schema), then GREEN358 full tests.
+  Exact5MiB accepted; encoded/decoded over-limit paths verified before decode.
+  Additional high-bit GIF masquerade regression RED->byte-equality fix->GREEN.
+- Task2 new MCP/direct/adapter tests RED (missing tool/client and ignored internal
+  multipart), then GREEN363 full tests. Exact multipart bytes/ref/headers,
+  no-filesystem guards, literal metadata, malformed results and safe errors.
+  Inventory52 and every-data-tool/type/import contracts updated.
+- Task3 real loopback verifies four types, binary bytes, prefix/JWT/length/ref,
+  redirect/socket/timeout/403/413/500 one-request-only failures, response cap
+  including decompressed gzip and actual5MiB upload. Stdio exact52 strict tools.
+  PNG example checksum independently corrected; no production image decoder added.
+- Clean npm ci/typecheck/full suite **369/369**, diff whitespace check pass.
+  Dependencies unchanged:9 inherited advisories (3 moderate,4 high,2 critical).
+- No live uploads, filesystem convenience input, local temporary files, private
+  changes, publication, deployment or merge. README includes per-request limits
+  and header-only validation caveats, not a process-wide resource/security claim.
+- Pending independent whole-branch review, final verification and authorized PR.
