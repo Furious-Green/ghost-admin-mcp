@@ -42,8 +42,8 @@ SHA256SUMS and verification.json; nonzero on dirty tracked tree/existing output.
 Files: README.md, docs/coverage.md, docs/artifacts.md, this plan outcome.
 - [x] Document source-backed credential/SDK/native/live/version matrix and known gaps.
 - [x] Document pinned source/runtime install, checksums, migrations and safe rollback.
-- [ ] Clean ci/typecheck/full suite/artifacts/full+production audit/diff check.
-- [ ] One independent whole-branch review; material fixes test-first and final verify.
+- [x] Clean ci/typecheck/full suite/artifacts/full+production audit/diff check.
+- [x] One independent whole-branch review; material fixes test-first and final verify.
 - [ ] Audit #12/#1 acceptance, template search, push/PR with justified closing links;
   check CI and closing references, stop without merging or publishing.
 
@@ -92,5 +92,25 @@ Files: README.md, docs/coverage.md, docs/artifacts.md, this plan outcome.
   archives not promised. Historical RED evidence is recorded here, not certified
   by the independent reviewer. Cost if wrong: offline evidence is insufficient
   for a particular consumer's live operation; separate approval/verification needed.
-- No Minor findings. Pending final411-test/artifact/audit gate and PR/CI acceptance
-  audit; no second independent review.
+- No Minor findings. Final clean install/typecheck/**411 tests**/full+production
+  audits0/diff check passed. Fixed b66e11e source/runtime artifacts passed with
+  external extraction directories; all checksums verified. No second review.
+
+## Acceptance audit for final PR
+
+| Criterion | Evidence |
+| --- | --- |
+| Fork identity, no upstream npm ownership | manifest/lock name, private guard, repository metadata; inherited version documented |
+| License and attribution | MIT manifest matches unchanged original LICENSE; original author retained and provenance documented |
+| Locked clean source/runtime build/start | verify:artifacts source git archive -> npm ci build; independent production-only runtime install with local resolution checks |
+| Offline CI discovery | existing410 suite plus isolation regression =411; CI adds artifact gate, dummy credentials and zero Ghost requests |
+| Coverage/version/credential honesty | docs/coverage.md;31 SDK/23 native operations,5.130.0 source baseline, no live assurance; operation-specific hints |
+| Migrations and pinned adoption/rollback | existing README envelope/strict/removal migrations + docs/artifacts.md full SHA/checksums/separate installs and remote-effect disclaimer |
+| Known gaps and bounded side effects | coverage matrix explicitly excludes fullUI/internal parity and lists upload/email/billing/permission limits |
+| No automatic publication/deployment | no publish/release/tag/upload/deploy workflow or service actions; private manifest protection |
+
+The original #1 work items #2 through #11 are merged/closed; this final #12 slice
+supplies its remaining release-preparation gate. Closing links for #12 and the
+original scoped tracker #1 are justified only by this documented scope, not full
+Admin API parity or live certification. #25 remains separate and open. No PR
+merge or issue closure is performed here; CI/PR links are recorded externally.
