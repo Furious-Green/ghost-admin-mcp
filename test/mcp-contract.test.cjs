@@ -127,15 +127,16 @@ test('all resource handlers return actual client JSON rather than placeholder te
   assert.equal(requests.length, 7);
 });
 
-test('prompt uses the injected post reader and retains the existing bounded HTML preview', async t => {
+test('prompt uses the injected HTML reader without the old 300-character preview', async t => {
   const {mcpClient, requests, enqueueResponse} = await harness(t);
   enqueueResponse({posts: [{...entity, excerpt: 'Short summary', html: 'a'.repeat(300) + 'b'.repeat(100)}]});
   const output = await mcpClient.getPrompt({name: 'summarize-post', arguments: {postId: 'abc123'}});
   assert.equal(requests[0].url, `${config.url}/ghost/api/admin/posts/abc123/`);
-  assert.equal(output.messages[0].content.text, `Summarize the following Ghost post:\n\nTitle: Example\nExcerpt: Short summary\n\nContent Preview:\n${'a'.repeat(300)}...`);
+  assert.deepEqual(requests[0].params,{formats:'html'});
+  const source=JSON.parse(output.messages[0].content.text.split('\n\nSource data (JSON):\n')[1]);
+  assert.equal(source.html,'a'.repeat(300)+'b'.repeat(100));assert.equal(source.truncation.html.truncated,false);
   enqueueResponse({posts: [{title: null, excerpt: {not: 'text'}, html: 123}]});
-  const malformed = await mcpClient.getPrompt({name: 'summarize-post', arguments: {postId: 'abc123'}});
-  assert.equal(malformed.messages[0].content.text, 'Summarize the following Ghost post:\n\nTitle: \nExcerpt: \n\nContent Preview:\n...');
+  await assert.rejects(mcpClient.getPrompt({name: 'summarize-post', arguments: {postId: 'abc123'}}),/HTML is unavailable/);
 });
 
 test('MCP permission failures are errors without diagnostics, secrets, or mutation retries', async t => {
