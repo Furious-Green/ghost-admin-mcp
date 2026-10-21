@@ -13,7 +13,9 @@ unknown/disabled and internal request handling errors remain protocol errors.
 54 tools/7 resources/1 prompt/8 deletes/envelopes/strictness/caps and no retries.
 Preserve all old invalid-input cases; change their expected channel deliberately.
 No dependency upgrades, private SDK access, task support, live Ghost, publication,
-tags/releases/deploy/merge or consumer-specific public information.
+releases/deploy/merge or consumer-specific public information. User subsequently
+authorized annotated version tags: v0.1.0 at merged4072575 after verification;
+v0.2.0 waits for this PR's actual merge, never an unmerged candidate.
 Version0.2.0; manifest/MCP/lock consistent. One independent review, native execution.
 
 ## Review Focus
@@ -30,13 +32,13 @@ loopback tests only where known-tool validation changes channel; no adapter chan
 Interfaces: assertToolError(Promise<CallToolResult>, matcher?, message?) resolves
 the actual result and asserts isError/text, propagating any rejection; never
 converts exceptions into passing tool results. Dispatcher remains public API.
-- [ ] Write helper behavioral tests and spec error-channel/malformed/internal/
+- [x] Write helper behavioral tests and spec error-channel/malformed/internal/
   omitted-arguments regressions; migrate existing assertions retaining their cases.
-- [ ] Run suite RED against existing dispatcher; confirm failure channels match.
-- [ ] Add common tool-error result builder, change budget/schema failure returns,
+- [x] Run suite RED against existing dispatcher; confirm failure channels match.
+- [x] Add common tool-error result builder, change budget/schema failure returns,
   default absent arguments to{}, map parser exception to sanitized InternalError;
   keep unknown/disabled/task protocols and lifecycle untouched.
-- [ ] Typecheck/full suite GREEN; document any parser/envelope SDK surprises;
+- [x] Typecheck/full suite GREEN; document any parser/envelope SDK surprises;
   commit. No tests should weaken schema rejection, sanitizers or no-HTTP assertions.
 
 ### Task 2: Version, migration, verification and PR
@@ -45,10 +47,11 @@ docs/tool-errors.md, docs/coverage.md, docs/artifacts.md,
 docs/dependency-security.md, this plan outcome.
 Interfaces: fork0.2.0 and current migration links, archive version evidence from
 existing verify:artifacts; resource/prompt protocol classifications unchanged.
-- [ ] Manifest version test RED0.1.0 ->0.2.0 manifest/lock GREEN; document wire
+- [x] Manifest version test RED0.1.0 ->0.2.0 manifest/lock GREEN; document wire
   examples/client handling and explicitly justified retained dispatch/registry.
 - [ ] Clean ci/typecheck/full suite/full+production audit/diff; commit then source/
-  runtime artifacts and checksums at committed SHA. No actual publication/tag.
+  runtime artifacts and checksums at committed SHA. No actual publication;
+  separately requested annotated tags obey the merge-boundary rule above.
 - [ ] Independent read-only whole-branch review, fix material findings test-first;
   final gate, template search, push/open #25 PR, verify CI/closing references.
 
@@ -58,3 +61,33 @@ existing verify:artifacts; resource/prompt protocol classifications unchanged.
 - [x] User-authorized continuous native workflow and specification authority.
 - [x] Spec/plan self-review: request/schema distinction, budget/internal errors,
   omitted args and SDK mismatch explicit; Task1 supplies Task2 documented contract.
+
+## Execution evidence
+
+- Helper absent RED -> real-MCP helper tests GREEN; helper propagates protocol
+  exceptions and refuses successful results, matches actual callback errors.
+- Migrated every existing known-tool schema rejection case to explicit resolved
+  isError assertions. Full suite initially RED28, preserving all input fixtures,
+  strictness/diagnostic/no-HTTP assertions; adapter rejection tests unchanged.
+- Malformed tools/call parameters revealed outer SDK schema.parse produces raw
+  Zod/InternalError before its intended InvalidParams wrapper. Broad public
+  method-routing schema lets full-envelope wrapper execute first; raw stdio
+  regressions now verify the selected-32602 channel without private API changes.
+- Parser exceptions sanitized as-32603; unsupported-handler regression observed
+  RED-32602 -> GREEN-32603 with no callback. Existing deep/wide/cycle/shared and
+  budget boundary/large string/schema update/rename/removal/isolation tests GREEN.
+- Omitted arguments tested with empty tool and required posts_delete ID; no
+  required-input bypass. All schema/input safeguards remain active before HTTP.
+- Experimental task metadata is rejected by SDK capability check before dispatch
+  with-32603; preserve existing fail-closed/no-mutation boundary and document the
+  receiver ignore-metadata conformance limitation explicitly, not a whole-protocol
+  compliance claim. Cost: that experimental task behavior remains outside this
+  ordinary error-format migration and needs separately designed safety changes.
+- Fork version policy RED0.1.0 -> GREEN0.2.0; manifest/MCP/lock stay aligned. No
+  dependency graph updates. Current docs explain spec-vs-SDK, wire examples,
+  client handling before parsing success and retained dispatcher/lifecycle need.
+- Clean ci/typecheck/**417/417 tests**, full+production audits**zero**, diff check
+  passed before review. Pending committed artifact gate and independent review.
+- Remote tag listing was empty; only CI workflow exists, with tests/artifact
+  checks and no publish/deploy/upload actions. User-requested v0.1.0 tag will
+  identify merged #26 (4072575), not this0.2.0 branch. v0.2.0 awaits actual merge.
