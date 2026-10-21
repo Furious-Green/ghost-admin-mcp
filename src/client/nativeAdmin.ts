@@ -2,6 +2,7 @@ import {createHmac} from 'node:crypto';
 import {createNativeRequestExecutor} from './nativeRequest';
 import type {GhostConfig, QueryOptions, RequestExecutor} from './types';
 import {MAX_IMAGE_MULTIPART_BYTES, MAX_IMAGE_RESPONSE_BYTES} from '../schemas/images';
+import {MAX_THEME_MULTIPART_BYTES, MAX_THEME_RESPONSE_BYTES} from '../schemas/themes';
 
 const routes = {
     'posts.copy': ['posts', 'POST', true, false, true],
@@ -25,6 +26,8 @@ const routes = {
     'labels.delete': ['labels', 'DELETE', true, false],
     'site.read': ['site', 'GET', false, false, false, true],
     'images.upload': ['images/upload', 'POST', false, true],
+    'themes.upload': ['themes/upload', 'POST', false, true],
+    'themes.activate': ['themes', 'PUT', true, false],
 } as const;
 export type NativeOperation = keyof typeof routes;
 export type NativeInput = {id?: string; slug?: string; query?: QueryOptions; body?: unknown; multipart?: {body: Buffer; boundary: string}};
@@ -53,25 +56,28 @@ function safeError(label: string, error: unknown): Error {
     if (typeof type === 'string' && [
         'NoPermissionError', 'NotFoundError', 'ValidationError', 'UnauthorizedError',
         'VersionMismatchError', 'ConflictError', 'BadRequestError', 'InternalServerError',
-        'TooManyRequestsError',
+        'TooManyRequestsError', 'ThemeValidationError',
     ].includes(type)) safe.name = type;
+    if (type === 'ThemeValidationError' && label.startsWith('themes ')) safe.message += ' ThemeValidationError.';
     return safe;
 }
 
 export function createNativeAdminRequest(config: GhostConfig, makeRequest?: RequestExecutor) {
     const execute = makeRequest ?? createNativeRequestExecutor();
     const executeUpload = makeRequest ?? createNativeRequestExecutor({maxBodyLength: MAX_IMAGE_MULTIPART_BYTES, maxContentLength: MAX_IMAGE_RESPONSE_BYTES});
+    const executeTheme = makeRequest ?? createNativeRequestExecutor({maxBodyLength: MAX_THEME_MULTIPART_BYTES, maxContentLength: MAX_THEME_RESPONSE_BYTES});
     return async (operation: NativeOperation, input: NativeInput = {}): Promise<unknown> => {
         if (!Object.hasOwn(routes, operation)) throw new Error('Invalid Ghost native operation.');
         const route: readonly [string, string, boolean, boolean, boolean?, boolean?] = routes[operation];
         const [resource, method, needsId, write, copy, publicRead] = route;
         const label = operation.replace('.', ' ');
         const invalid: (field: string) => never = field => { throw new Error(`Invalid Ghost ${copy ? 'copy' : label} ${field}.`); };
-        const upload = operation === 'images.upload';
+        const theme = operation === 'themes.upload' || operation === 'themes.activate';
+        const upload = operation === 'images.upload' || operation === 'themes.upload';
         if (upload) {
             const multipart = input.multipart;
             if (!record(multipart) || !Buffer.isBuffer(multipart.body) || multipart.body.length === 0
-                || multipart.body.length > MAX_IMAGE_MULTIPART_BYTES || typeof multipart.boundary !== 'string'
+                || multipart.body.length > (theme ? MAX_THEME_MULTIPART_BYTES : MAX_IMAGE_MULTIPART_BYTES) || typeof multipart.boundary !== 'string'
                 || !/^[0-9a-f]{48}$/.test(multipart.boundary) || input.body !== undefined || input.id !== undefined || input.slug !== undefined
                 || (input.query !== undefined && (!record(input.query) || Object.keys(input.query).length > 0))) invalid('multipart');
         } else if (input.multipart !== undefined) invalid('multipart');
@@ -90,7 +96,7 @@ export function createNativeAdminRequest(config: GhostConfig, makeRequest?: Requ
             || url.username || url.password || url.search || url.hash || /[?#\\\s]/.test(config.url)
             || config.url.endsWith('/')) invalid('url');
         const prefix = url.pathname === '/' ? '' : url.pathname;
-        const path = `${url.origin}${prefix}/ghost/api/admin/${resource}/${needsId ? `${segment}/` : ''}${copy ? 'copy/' : ''}`;
+        const path = `${url.origin}${prefix}/ghost/api/admin/${resource}/${needsId ? `${segment}/` : ''}${copy ? 'copy/' : operation === 'themes.activate' ? 'activate/' : ''}`;
         const match = /^v(\d+)(?:\.(\d+))?$/.exec(config.version);
         if (!match || Number(match[1]) < 5) invalid('version');
         const version = match[2] === undefined ? `${config.version}.0` : config.version;
@@ -110,7 +116,7 @@ export function createNativeAdminRequest(config: GhostConfig, makeRequest?: Requ
             headers.Authorization = `Ghost ${header}.${payload}.${signature}`;
         }
         try {
-            return await (upload ? executeUpload : execute)({url: path, method, params: input.query ?? {},
+            return await (theme ? executeTheme : upload ? executeUpload : execute)({url: path, method, params: input.query ?? {},
                 ...(write ? {data: upload ? input.multipart?.body : input.body} : {}),
                 headers,
             });

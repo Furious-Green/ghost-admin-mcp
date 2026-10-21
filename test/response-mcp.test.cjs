@@ -14,7 +14,7 @@ test('every data tool serializes one envelope while deletes keep their confirmat
   const r = await harness(t);
   const tools = []; let cursor;
   do {const page = await r.mcpClient.listTools(cursor ? {cursor} : {}); tools.push(...page.tools); cursor = page.nextCursor;} while (cursor);
-  assert.equal(tools.length, 52);
+  assert.equal(tools.length, 54);
   assert.deepEqual(tools.map(t => t.name).sort(), [...toolNames, ...additionalToolNames].sort());
   assert.equal(r.requests.length, 0);
   for (const tool of tools) {
@@ -26,7 +26,7 @@ test('every data tool serializes one envelope while deletes keep their confirmat
   const singular = {posts:'Post',pages:'Page',members:'Member',users:'User',tags:'Tag',newsletters:'Newsletter',webhooks:'Webhook',invites:'Invite',labels:'Label'};
   let dataCount = 0, deleteCount = 0;
   for (const [family, operations] of Object.entries(all)) for (const [op, args] of Object.entries(operations)) {
-    const returned={id:'one',meta:{entity:true},data:'entity field',...(family==='images'?{url:'/returned.png'}:{})};
+    const returned={id:'one',meta:{entity:true},data:'entity field',...(family==='images'?{url:'/returned.png'}:{}),...(family==='themes'?{name:'actual',active:false}:{})};
     r.enqueueResponse(op === 'delete' ? '' : {[family]: family === 'site' ? returned : [returned],meta:{example:{retained:true}}});
     const before = r.requests.length;
     const response = await r.mcpClient.callTool({name:`${family}_${op}`,arguments:structuredClone(args)});
@@ -41,9 +41,9 @@ test('every data tool serializes one envelope while deletes keep their confirmat
       assert.deepEqual(JSON.parse(response.content[0].text), {data: op === 'browse' ? [returned] : returned,meta:{example:{retained:true}}});
     }
   }
-  assert.equal(dataCount, 44);
+  assert.equal(dataCount, 46);
   assert.equal(deleteCount, 8);
-  assert.equal(r.requests.length, 52);
+  assert.equal(r.requests.length, 54);
 });
 
 test('MCP callers manually walk first middle final and empty pages without hidden requests', async t => {

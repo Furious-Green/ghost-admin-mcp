@@ -18,6 +18,7 @@ import {registerWebhookTools} from './tools/webhooks';
 import {registerLabelTools} from './tools/labels';
 import {registerSiteTools} from './tools/site';
 import {registerImageTools} from './tools/images';
+import {registerThemeTools} from './tools/themes';
 import {registerPrompts} from './prompts';
 
 export function createServer(client: GhostClient): McpServer {
@@ -48,6 +49,7 @@ export function createServer(client: GhostClient): McpServer {
     registerLabelTools(server, client);
     registerSiteTools(server, client);
     registerImageTools(server, client);
+    registerThemeTools(server, client);
     registerPrompts(server, client);
     return server;
 }

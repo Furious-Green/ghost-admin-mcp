@@ -15,6 +15,7 @@ exports.makeRecordingClient = function makeRecordingClient() {
       const resource = new URL(request.url).pathname.split('/')[4];
       if (resource === 'site') return {site: {title: 'Example', description: '', logo: null, url: config.url, version: '5.130'}};
       if (resource === 'images') return {images: [{url: '/content/images/example.png'}]};
+      if (resource === 'themes') return {themes: [{name: 'example', active: false}]};
       return request.method === 'GET' && !new URL(request.url).pathname.slice(1).split('/')[4]
         ? {[resource]: [structuredClone(entity)], meta: {pagination: structuredClone(pagination)}}
         : {[resource]: [structuredClone(entity)]};
