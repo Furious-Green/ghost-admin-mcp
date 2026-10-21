@@ -87,4 +87,18 @@ implementation or unrelated tool/transport changes; helper extraction stays opt-
   No new dependencies;9 inherited advisories (3 moderate,4 high,2 critical).
 - No live Ghost reads or mutations, model/Langfuse calls, telemetry, private
   changes, merge/deploy/publication. Existing transport policies unchanged.
-- Pending one independent whole-branch review, final verification and approved PR.
+- Independent read-only whole-branch review02e536b..61fe956 found no Critical,
+  Important or Minor issues. Reviewer independently passed398 tests/typecheck/
+  whitespace check and confirmed SDK raw-variable/strict-schema behavior, fixed
+  resource mappings, error handling and prompt caps/format/source separation.
+- No fix pass, deferred findings or additional review. Limitations stand: no live
+  version/credential compatibility or model-output evaluation; source caps are
+  not network/JSON/global-memory/token/injection-proof guarantees, and resource
+  output caps were not promised. Nine inherited advisories remain blockers.
+- Acceptance#11 audited: all7 resource registrations now read real clients with
+  correct variables/JSON envelopes; permission boundaries and publicsite distinction
+  retained; prompt explicitly requests supported HTML with documented truncation;
+  no placeholder successes; actual MCP registration/variables/calls/errors/prompt
+  construction, HTTP and stdio covered offline. Eligible for Closes#11.
+- Remaining integration steps: final verification, authorized push/PR with actual
+  closing link and CI checks. No live mutations/private adoption/merge/deploy.
