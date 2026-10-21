@@ -191,8 +191,8 @@ The supported schema contract is source-verified against Ghost **5.130.0**, pinn
 ### Explicit newsletter delivery and administration
 
 **WARNING: these writes can email real people.** Tests use mocks/loopback only.
-The pinned MCP SDK has no annotations API; tool descriptions expose these side
-effects. No automatic send retry, newsletter selection or recipient inference is
+Tool descriptions expose these side effects; this fork does not add tool
+annotations in this compatibility slice. No automatic send retry, newsletter selection or recipient inference is
 performed. Permissions, active newsletter existence, valid member NQL, scheduling
 timing and post/email state transitions remain Ghost's responsibility. A successful
 write is not proof of delivery: inspect returned `data.status`, email relationships
@@ -698,7 +698,16 @@ npm test
 
 CI uses the committed dependency lockfile, Node 22, and read-only permissions; it needs no repository secrets. The workflow uses JSON syntax, which is valid YAML, so its policy can be checked without adding a YAML parser dependency.
 
-The inherited lockfile currently reports npm audit vulnerabilities, including critical advisories. These changes do not upgrade dependencies or constitute a release-readiness/security approval. Dependency remediation and release verification are required before adoption; do not publish using the upstream npm identity.
+The 2026-10-22 dependency-remediation slice replaces the inherited nine-advisory
+graph with exact MCP 1.32.1 / Axios 1.20.0 / Zod 3.25.76 targets and patched compatible
+transitives. Clean full and production-only `npm audit` report **zero known
+vulnerabilities** at verification time. See [dependency evidence and reproduction
+commands](docs/dependency-security.md), including the public-API tool error
+compatibility boundary and 10000-element pre-validation guard. Future advisories
+can appear; this is not comprehensive security or live-compatibility approval.
+Package/artifact preparation and coverage/permission documentation remain part of
+the release gate. No publication/tag/deployment is performed; do not publish using
+the upstream npm identity.
 
 ## Contributing
 

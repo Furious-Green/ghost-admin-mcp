@@ -74,3 +74,27 @@ updates remain synchronized; makeSchema retains strictness/sanitizers on schema 
 Task1 intentionally reaches upstream RED; Task2 owns the dependency compatibility
 deliverable and shared verification/commit gate. Each focus row has tests. No
 work on consumers or artifact publication; public notes limited to this fork.
+
+## Execution evidence
+
+- Existing baseline398 tests passed; local dependency-policy test RED at old
+  direct versions, explicit error-contract baseline passed before upgrade.
+- Selected graph installed with no forced audit fix or blanket overrides. First
+  clean build exposed Axios TypeScript inference; type-only unknown[] assertion
+  preserves concat/join implementation and existing HTTP parity tests.
+- Upgraded full suite exposed26 protocol/discovery failures. Public per-server
+  dispatcher and bounded iterative guard restore the existing error contract;
+  current public handler supports callback updates. Strict schema/sanitizer updates,
+  rename/remove/disable, server isolation, deep/wide/cyclic/shared/sparse inputs,
+  boundary counts and large strings covered. Task-augmented calls rejected.
+- Label ZodEffects normalization hid discovery fields in upgraded SDK: existing
+  stdio assertion RED -> object discovery schema delegates to original refined
+  async parser -> GREEN. No existing assertion relaxed or deleted.
+- Combined Task1/2 clean ci/typecheck/full **405/405** tests, whitespace check;
+  full and production-only npm audits **zero**. Target graph recorded in
+  docs/dependency-security.md, original Ghost SDK1.13.13 retained.
+- Current README stale SDK-annotation/security claims updated; historical
+  completed evidence untouched. No consumer-specific information added to public
+  notes; no identity, tag, publication or service changes. Slice2 remains open.
+- Pending independent whole-branch review, final verification and reference-only
+  PR for#12 (not an issue-closing link).
