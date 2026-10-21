@@ -38,6 +38,7 @@ export interface GhostClient {
     roles: ResourceClient<RoleInputs>;
     webhooks: ResourceClient<WebhookInputs>;
     labels: ResourceClient<LabelInputs>;
+    site: ResourceClient<{read: Record<string, never>}>;
 }
 
 export type SdkRequest = {

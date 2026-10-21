@@ -53,3 +53,44 @@ test('direct labels reject malformed options and preserve caller inputs',async()
   assert.deepEqual(r.requests[0].params,{include:'count.members'});
   assert.deepEqual(r.requests[0].data,{labels:[{name:'A',slug:'a'}]});
 });
+
+test('site read returns real singleton data and metadata without authentication or invented fields',async t=>{
+  const r=await setup(t);
+  const site={title:'Publication',description:'News',logo:null,url:'https://front.example.invalid/',version:'5.130',icon:'/relative/icon.png',unknown:{zero:0}};
+  for(const meta of [undefined,{}, {unknown:{value:null}}]){
+    r.enqueueResponse({site,...(meta!==undefined?{meta}:{})});
+    const result=await r.call('site_read',{});
+    assert.notEqual(result.isError,true,result.content[0].text);
+    assert.deepEqual(JSON.parse(result.content[0].text),{data:site,...(meta!==undefined?{meta}:{})});
+  }
+  assert.equal(r.requests.length,3);
+  for(const req of r.requests){
+    assert.equal(req.method,'GET');assert.equal(req.url,`${config.url}/ghost/api/admin/site/`);
+    assert.equal(Object.keys(req.headers).some(key=>key.toLowerCase()==='authorization'),false);
+    assert.deepEqual(req.params,{});assert.equal(req.data,undefined);
+  }
+  const input={},options={};r.enqueueResponse({site});
+  assert.deepEqual(await r.client.site.read(input,options),{data:site});
+  assert.deepEqual(input,{});assert.deepEqual(options,{});
+});
+
+test('site rejects malformed singleton and metadata responses instead of returning fake success',async t=>{
+  const r=await setup(t);
+  for(const body of [{},{site:null},{site:[]},{site:[{title:'Wrong'}]},{site:'Wrong'},{site:{},meta:null},{site:{},meta:[]},{site:{},meta:'wrong'}]){
+    r.enqueueResponse(body);const result=await r.call('site_read',{});
+    assert.equal(result.isError,true,JSON.stringify(body));assert.match(result.content[0].text,/Unexpected Ghost site response/);
+  }
+  assert.equal(r.requests.length,8);
+});
+
+test('site empty-input validation protects both direct and injected clients',async t=>{
+  const r=makeRecordingClient();let called=0;
+  const m=await openMcpHarness({...r.client,site:{read:async()=>{called++;return {data:{}}}}});t.after(m.close);
+  for(const input of [{url:'https://other.invalid/'},{fields:'title'},{settings:true},{key:'secret'}]){
+    await assert.rejects(m.mcpClient.callTool({name:'site_read',arguments:input}),/Invalid arguments/);
+    await assert.rejects(r.client.site.read(input));
+  }
+  for(const options of [null,[],{url:'https://other.invalid/'},{fields:'title'}])await assert.rejects(r.client.site.read({},options));
+  for(const input of [undefined,null,[],42])await assert.rejects(r.client.site.read(input));
+  assert.equal(called,0);assert.equal(r.requests.length,0);
+});

@@ -16,6 +16,7 @@ import {registerInviteTools} from './tools/invites';
 import {registerRoleTools} from './tools/roles';
 import {registerWebhookTools} from './tools/webhooks';
 import {registerLabelTools} from './tools/labels';
+import {registerSiteTools} from './tools/site';
 import {registerPrompts} from './prompts';
 
 export function createServer(client: GhostClient): McpServer {
@@ -44,6 +45,7 @@ export function createServer(client: GhostClient): McpServer {
     registerRoleTools(server, client);
     registerWebhookTools(server, client);
     registerLabelTools(server, client);
+    registerSiteTools(server, client);
     registerPrompts(server, client);
     return server;
 }

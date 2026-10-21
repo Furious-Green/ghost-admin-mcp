@@ -70,7 +70,7 @@ test('stdio initializes and discovers all tools without any Ghost HTTP calls', {
     cursor = page.nextCursor;
   } while (cursor);
   assert.deepEqual(names.sort(), [...toolNames, ...additionalToolNames].sort());
-  assert.equal(names.length,50);
+  assert.equal(names.length,51);
   assert.equal(names.includes('newsletters_delete'),false);
   await assert.rejects(cli.request('tools/call',{name:'newsletters_delete',arguments:{id:'one'}}),/not found|Unknown tool/i);
   assert.equal(cli.requests.length, 0);

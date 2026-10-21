@@ -93,3 +93,13 @@ client.newsletters.add({name: 'A', slug: 'weekly', sender_email: null, header_im
 client.newsletters.delete({id: 'one'});
 // @ts-expect-error Opt-in of existing members is creation-only.
 client.newsletters.edit({id: 'one', opt_in_existing: true});
+client.labels.browse({page: 1, limit: 'all', include: 'count.members'});
+client.labels.read({slug: 'vip'});
+client.labels.add({name: 'VIP', slug: 'vip'});
+client.site.read({});
+// @ts-expect-error Site read does not accept URL overrides.
+client.site.read({url: 'https://other.invalid'});
+// @ts-expect-error There is no site settings editing operation.
+client.site.edit({title: 'A'});
+// @ts-expect-error Generated label audit fields are not writable.
+client.labels.add({name: 'VIP', created_at: 'now'});
