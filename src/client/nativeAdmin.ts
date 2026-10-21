@@ -1,6 +1,7 @@
 import {createHmac} from 'node:crypto';
 import {createNativeRequestExecutor} from './nativeRequest';
 import type {GhostConfig, QueryOptions, RequestExecutor} from './types';
+import {MAX_IMAGE_MULTIPART_BYTES, MAX_IMAGE_RESPONSE_BYTES} from '../schemas/images';
 
 const routes = {
     'posts.copy': ['posts', 'POST', true, false, true],
@@ -23,9 +24,10 @@ const routes = {
     'labels.edit': ['labels', 'PUT', true, true],
     'labels.delete': ['labels', 'DELETE', true, false],
     'site.read': ['site', 'GET', false, false, false, true],
+    'images.upload': ['images/upload', 'POST', false, true],
 } as const;
 export type NativeOperation = keyof typeof routes;
-export type NativeInput = {id?: string; slug?: string; query?: QueryOptions; body?: unknown};
+export type NativeInput = {id?: string; slug?: string; query?: QueryOptions; body?: unknown; multipart?: {body: Buffer; boundary: string}};
 
 export function encodeNativeId(value: unknown): string {
     if (typeof value !== 'string' || !value.trim() || value === '.' || value === '..'
@@ -58,12 +60,21 @@ function safeError(label: string, error: unknown): Error {
 
 export function createNativeAdminRequest(config: GhostConfig, makeRequest?: RequestExecutor) {
     const execute = makeRequest ?? createNativeRequestExecutor();
+    const executeUpload = makeRequest ?? createNativeRequestExecutor({maxBodyLength: MAX_IMAGE_MULTIPART_BYTES, maxContentLength: MAX_IMAGE_RESPONSE_BYTES});
     return async (operation: NativeOperation, input: NativeInput = {}): Promise<unknown> => {
         if (!Object.hasOwn(routes, operation)) throw new Error('Invalid Ghost native operation.');
         const route: readonly [string, string, boolean, boolean, boolean?, boolean?] = routes[operation];
         const [resource, method, needsId, write, copy, publicRead] = route;
         const label = operation.replace('.', ' ');
         const invalid: (field: string) => never = field => { throw new Error(`Invalid Ghost ${copy ? 'copy' : label} ${field}.`); };
+        const upload = operation === 'images.upload';
+        if (upload) {
+            const multipart = input.multipart;
+            if (!record(multipart) || !Buffer.isBuffer(multipart.body) || multipart.body.length === 0
+                || multipart.body.length > MAX_IMAGE_MULTIPART_BYTES || typeof multipart.boundary !== 'string'
+                || !/^[0-9a-f]{48}$/.test(multipart.boundary) || input.body !== undefined || input.id !== undefined || input.slug !== undefined
+                || (input.query !== undefined && (!record(input.query) || Object.keys(input.query).length > 0))) invalid('multipart');
+        } else if (input.multipart !== undefined) invalid('multipart');
         let segment = '';
         if (input.slug !== undefined && operation !== 'labels.read') invalid('slug');
         if (operation === 'labels.read' && Number(input.id !== undefined) + Number(input.slug !== undefined) !== 1) invalid('selector');
@@ -85,6 +96,10 @@ export function createNativeAdminRequest(config: GhostConfig, makeRequest?: Requ
         const version = match[2] === undefined ? `${config.version}.0` : config.version;
         const headers: Record<string, string> = {Accept: 'application/json', 'Accept-Version': version,
             ...(write ? {'Content-Type': 'application/json'} : {})};
+        if (upload && input.multipart) {
+            headers['Content-Type'] = `multipart/form-data; boundary=${input.multipart.boundary}`;
+            headers['Content-Length'] = String(input.multipart.body.length);
+        }
         if (!publicRead) {
             if (!/^[0-9a-f]{24}:[0-9a-f]{64}$/i.test(config.key)) invalid('key');
             const [id, secret] = config.key.split(':');
@@ -95,8 +110,8 @@ export function createNativeAdminRequest(config: GhostConfig, makeRequest?: Requ
             headers.Authorization = `Ghost ${header}.${payload}.${signature}`;
         }
         try {
-            return await execute({url: path, method, params: input.query ?? {},
-                ...(write ? {data: input.body} : {}),
+            return await (upload ? executeUpload : execute)({url: path, method, params: input.query ?? {},
+                ...(write ? {data: upload ? input.multipart?.body : input.body} : {}),
                 headers,
             });
         } catch (error) { throw safeError(label, error); }

@@ -103,3 +103,10 @@ client.site.read({url: 'https://other.invalid'});
 client.site.edit({title: 'A'});
 // @ts-expect-error Generated label audit fields are not writable.
 client.labels.add({name: 'VIP', created_at: 'now'});
+client.images.upload({base64: 'iVBORw0KGgo=', filename: 'image.png', mime_type: 'image/png', ref: 'opaque'});
+// @ts-expect-error Local filesystem input is not part of the remote contract.
+client.images.upload({file: '/etc/passwd'});
+// @ts-expect-error Remote URLs are not fetched.
+client.images.upload({url: 'https://other.invalid'});
+// @ts-expect-error SVG upload is excluded.
+client.images.upload({base64: 'eA==', filename: 'x.svg', mime_type: 'image/svg+xml'});

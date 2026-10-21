@@ -74,11 +74,18 @@ test('stdio initializes and discovers all tools without any Ghost HTTP calls', {
         assert.match(tool.description,/unauthenticated/i);
         assert.match(tool.description,/not general settings/i);
       }
+      if (tool.name === 'images_upload') {
+        assert.deepEqual(tool.inputSchema.properties.mime_type.enum,['image/jpeg','image/png','image/gif','image/webp']);
+        assert.equal(tool.inputSchema.properties.base64.maxLength,6990508);
+        assert.equal(tool.inputSchema.properties.path,undefined);
+        assert.equal(tool.inputSchema.properties.url,undefined);
+        assert.match(tool.description,/5 MiB/);assert.match(tool.description,/writes a file/);assert.match(tool.description,/never automatically retried/);
+      }
     }
     cursor = page.nextCursor;
   } while (cursor);
   assert.deepEqual(names.sort(), [...toolNames, ...additionalToolNames].sort());
-  assert.equal(names.length,51);
+  assert.equal(names.length,52);
   assert.equal(names.includes('newsletters_delete'),false);
   await assert.rejects(cli.request('tools/call',{name:'newsletters_delete',arguments:{id:'one'}}),/not found|Unknown tool/i);
   assert.equal(cli.requests.length, 0);
