@@ -6,6 +6,7 @@ import {createStaffClients} from './staffClient';
 import {createLabelClient} from './labelsClient';
 import {createSiteClient} from './siteClient';
 import {createImageClient} from './imagesClient';
+import {createThemeClient} from './themesClient';
 import {prepareContentRequest} from './contentRequest';
 import {prepareAccountRequest} from './accountRequest';
 import {normalizeCollection, normalizeEntity} from './responses';
@@ -85,6 +86,7 @@ export function createGhostClient(config: GhostConfig, options: {makeRequest?: R
         labels: createLabelClient(config, options.makeRequest),
         site: createSiteClient(config, options.makeRequest),
         images: createImageClient(config, options.makeRequest),
+        themes: createThemeClient(config, options.makeRequest),
         webhooks: {add: method('webhooks', 'add'), edit: method('webhooks', 'edit'), delete: method('webhooks', 'delete')},
     };
 }

@@ -110,3 +110,11 @@ client.images.upload({file: '/etc/passwd'});
 client.images.upload({url: 'https://other.invalid'});
 // @ts-expect-error SVG upload is excluded.
 client.images.upload({base64: 'eA==', filename: 'x.svg', mime_type: 'image/svg+xml'});
+client.themes.upload({base64: 'UEs=', filename: 'theme.zip'});
+client.themes.activate({name: 'explicit-theme'});
+// @ts-expect-error Upload does not automatically activate.
+client.themes.upload({base64: 'UEs=', filename: 'theme.zip', activate: true});
+// @ts-expect-error No local paths in remote upload contract.
+client.themes.upload({path: '/server/theme.zip'});
+// @ts-expect-error Explicit name is required for activation.
+client.themes.activate({});
