@@ -1,6 +1,6 @@
 # Image Upload Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Historical implementation plan. Technical decisions and verification evidence are retained below.
 
 **Goal:** Deliver#9 safe remote-client image upload without filesystem/URL access.
 **Architecture:** Strict shared base64 image validation, focused native image
@@ -18,7 +18,7 @@ Existing SDK operations and JSON/public native routes remain unchanged.
 -No live uploads/private changes/merge/deploy/publication. Existing config,
   executable/license/badges/dependencies unchanged;9 advisories remain blockers.
 -Source reference5.130.0 only, not live/every5.x support;5MiB is our local policy.
--Approved continuous native TDD, one whole-branch review, push/PR without pauses.
+- Test-first implementation, one independent whole-branch review and pull-request delivery.
 
 ## Review Focus
 1. Oversized/noncanonical base64 rejected before allocation/HTTP, exact5MiB accepted (Task1).

@@ -1,6 +1,6 @@
 # Native Resource Repairs Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Historical implementation plan. Technical decisions and verification evidence are retained below.
 
 **Goal:** Resolve issue #3 by implementing twelve real native operations, removing three nonexistent tools, and documenting migration from upstream.
 
@@ -148,4 +148,4 @@ assert.deepEqual(offerArchiveRequest.data, {offers: [{status: 'archived'}]});
 - [x] Explicit intermediate inventory 49 -> 47 -> 46 keeps task commits independently testable; all expected names remain independent of production registration.
 - [x] Public RegisteredTool schema property handles strict MCP parsing without private registries or global dispatcher changes; runtime client validation is independent.
 - [x] Review Focus has recording, real MCP, and actual HTTP tests, not merely source-text assertions.
-- [x] No production code or dependency edits in this plan. Native execution preference retained; implementation waits for plan approval.
+- [x] This plan contains no production code or dependency edits; design and plan review precede implementation.

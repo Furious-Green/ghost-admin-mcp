@@ -1,6 +1,6 @@
 # Labels and Site Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Historical implementation plan. Technical decisions and verification evidence are retained below.
 
 **Goal:** Deliver #8 standalone member-label management and public site information.
 **Architecture:** Fixed native routes for labels and public site, strict schemas,
@@ -16,7 +16,7 @@ Keep SDK resources and member relationship schemas untouched.
 - No live mutations/emails/Stripe, private adoption, merge/deploy/publication.
 - Existing dependencies/lock/configuration/license/badges unchanged; nine advisories remain blockers.
 - Source-verified baseline5.130.0 only, no claim of all5.x/live support.
-- Native TDD and one independent whole-branch review, then approved push/PR.
+- Test-first implementation and one independent whole-branch review before pull-request delivery.
 
 ## Review Focus
 1. Slug reads vs ID reads preserve exactly one safe encoded route segment (Task1).

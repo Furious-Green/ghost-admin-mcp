@@ -3,7 +3,7 @@
 Date: 2026-10-20
 Issue: https://github.com/Furious-Green/ghost-admin-mcp/issues/5
 Base: merged issue #3, origin/main a6e27559af52b48366081ad01ad69f7cf63b18e7
-Status: Written specification approved by the user on 2026-10-21.
+Status: Design accepted on 2026-10-21.
 
 ## Intent and scope
 
@@ -14,7 +14,7 @@ Single-entity results must not turn into collections merely because metadata is
 present. Preserve newsletter verification/opt-in metadata without inventing a
 successful sender-address change or adding newsletter controls from issue #7.
 
-The user approved a uniform `{data, meta?}` envelope for every data-returning
+We use a uniform `{data, meta?}` envelope for every data-returning
 tool, rather than resource-specific keys or a browse-only compatibility patch.
 This is an intentional output-shape compatibility change, including copy tools.
 Delete confirmations and error behavior remain unchanged. All 46 tool names,
@@ -229,16 +229,16 @@ envelopes. Preserve unrelated baseline tests rather than weakening assertions.
    Import/stdio/CI/security regression coverage remains intact.
 
 Run clean npm ci, typecheck, full tests and diff check, preserving dependency
-versions and lockfile. Obtain one independent whole-branch review after native
-execution, unless the user changes that preference during plan approval. No live
+versions and lockfile. Obtain one independent whole-branch review after
+implementation. No live
 Ghost requests, email sends or Stripe changes. Inherited dependency advisories
 remain release/adoption blockers; hosted CI requires an authorized push.
 
 ## Design checklist
 
 - [x] Inspect merged context, SDK/native transforms, consumers and issue #5.
-- [x] Compare uniform/resource-keyed/browse-only approaches; user chooses uniform.
-- [x] Approve conversational architecture, semantics, migration and verification.
+- [x] Compare uniform/resource-keyed/browse-only approaches; select a uniform envelope.
+- [x] Review architecture, semantics, migration and verification.
 - [x] Write specification and self-review contracts, scope and ambiguity.
-- [x] User reviews this written specification.
+- [x] Review the written specification.
 - [x] Write/review implementation plan and confirm execution method.

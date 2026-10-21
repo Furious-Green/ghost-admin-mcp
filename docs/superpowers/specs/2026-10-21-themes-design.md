@@ -1,11 +1,12 @@
 # Issue #10: bounded theme upload and explicit activation
 
-## Approved intent
+## Intent and scope
 
-Add separate themes_upload and themes_activate for remote MCP clients. User
-approved10MiB base64 ZIP, safe archive checks, no local extraction/paths/URL
-fetching, explicit activation name, truthful errors/metadata, native TDD/one
-independent review/push+PR without additional pauses. Base merged#21:41cd589.
+Add separate themes_upload and themes_activate for remote MCP clients. The
+upload contract uses a 10 MiB base64 ZIP, safe archive checks, no local extraction/paths/URL
+fetching, an explicit activation name and truthful errors/metadata. Verification
+uses test-first implementation and one independent review before pull-request
+delivery. Base merged#21:41cd589.
 No live theme/site changes, private adoption, publication/deployment or merge.
 Existing isolated worktree reused. Preserve config/executable, strict inputs,
 MIT/badges/dependencies and `{data,meta?}`; inventory52->54,8 delete confirmations.

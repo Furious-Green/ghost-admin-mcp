@@ -1,6 +1,6 @@
 # Newsletter Delivery Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Historical implementation plan. Technical decisions and verification evidence are retained below.
 
 **Goal:** Complete #7 with explicit delivery/opt-in controls and truthful newsletter administration.
 **Architecture:** Extend shared strict post/newsletter schemas, validate delivery
@@ -13,7 +13,7 @@ and response normalization. Remove unsupported newsletter deletion, not emulate 
 - No live subscriber/verification emails, Ghost/Stripe mutations, private-wrapper changes, publication/deployment or merge.
 - Dependencies/lock/licenses/badges/settings/HTTP auth/retry policies unchanged; nine inherited advisories remain release/adoption blockers.
 - 45 tool names after explicit newsletters_delete removal; all other names and `{data, meta?}` outputs, seven delete confirmations retained.
-- Native execution, one independent final review; approach approved with continuous spec/plan/implementation/push+PR, no further approval pauses.
+- Use test-first implementation, one independent final review and pull-request delivery.
 - Baseline Ghost 5.130.0, minimum header v5.0; no live compatibility claim.
 
 ## Review Focus

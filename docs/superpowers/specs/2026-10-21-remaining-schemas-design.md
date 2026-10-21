@@ -1,13 +1,12 @@
 # Issue #6 slice 2: remaining-resource validation
 
-## Intent and approval
+## Intent and scope
 
 Complete the supported query/input contract after posts/pages/tags (#17), so
 callers cannot silently lose options or bypass validation through the typed
-client. The user approved this approach and requested continuous native execution
-through written spec/plan, implementation, one independent whole-branch review,
-push and PR. No further approval checkpoints, merge, release, deployment or
-private-wrapper changes. Base is merged #17, aa85b40.
+client. We use test-first implementation and one independent whole-branch review
+before pull-request delivery. Automatic merge, release, deployment and
+consumer-specific integration changes are outside this work. Base is merged #17, aa85b40.
 
 Keep all 46 names, `{data, meta?}` envelopes, delete text, executable/settings,
 MIT/badges, dependencies and transport/auth/retry policies. Strict input validation

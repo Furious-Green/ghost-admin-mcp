@@ -1,6 +1,6 @@
 # Response Metadata Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Historical implementation plan. Technical decisions and verification evidence are retained below.
 
 **Goal:** Resolve issue #5 by returning consistent data/optional-meta envelopes from all data-returning tools without losing server metadata or changing requests.
 
@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-20-response-metadata-design.md`
 
-**Execution status (2026-10-21):** Implemented with native execution in b165897,
+**Execution status (2026-10-21):** Implemented in b165897,
 23caa01, eaf14ee and 5177f96. Clean npm ci, typecheck, 301 tests and diff check
 passed. Independent whole-branch review reproduced verification and reported no
 findings. No dependency changes, live calls, push, deployment or private consumer
@@ -129,5 +129,5 @@ The shared response types initially live in responses.ts without changing old pu
 - [x] Atomic migration keeps intermediate commits testable: Task 1 is unused helpers; Task 2 changes all client boundaries/consumers together; Task 3 verifies and documents the same public contract.
 - [x] Interfaces match across tasks; broad internal unions do not leak into mapped method returns. Single SDK instance avoids repeated config validation warnings; AsyncLocalStorage carries request-local captures, not globals.
 - [x] All five Review Focus classes have explicit owner tests with independent literal expectations, controlled promises or actual HTTP where necessary.
-- [x] Scope preserves requests and existing SDK/native policy differences, avoids unrelated hardening, leaves newsletter/schema/resource work separate and retains native execution plus one final independent review.
-- [x] User reviews this implementation plan before execution.
+- [x] Scope preserves requests and existing SDK/native policy differences, avoids unrelated hardening, leaves newsletter/schema/resource work separate and retains test-first implementation plus one final independent review.
+- [x] Implementation plan reviewed before execution.

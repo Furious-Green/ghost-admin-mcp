@@ -1,6 +1,6 @@
 # Pages and Native Copy Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Historical implementation plan. Technical decisions and verification evidence are retained below.
 
 **Goal:** Resolve issue #4 with SDK-backed pages CRUD and native post/page copy, preserving existing tool behavior.
 
@@ -129,4 +129,4 @@
 - [x] Spec coverage: page schemas/SDK (Task 1), native routing/JWT/errors/default HTTP (Task 2), all MCP registration/compatibility/docs (Task 3).
 - [x] Interfaces: CRUD ToolInputs stay independent of CopyInput; shared RequestExecutor returns decoded bodies on both paths; exact inventory preserves the original dispatch matrix.
 - [x] Review Focus mapped to explicit tests, including actual default transport and malicious error bodies.
-- [x] No production implementation included or authorized by this document. Native execution preference retained; implementation waits for user plan review.
+- [x] This document records the implementation plan, not production changes; design and plan review precede implementation.

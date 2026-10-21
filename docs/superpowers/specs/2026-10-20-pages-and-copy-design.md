@@ -2,7 +2,7 @@
 
 Date: 2026-10-20
 Issue: https://github.com/Furious-Green/ghost-admin-mcp/issues/4
-Status: Written specification approved by the user on 2026-10-20.
+Status: Design accepted on 2026-10-20.
 
 ## Intent and success criteria
 
@@ -12,8 +12,8 @@ changing downstream deployments, or rewriting the SDK integration. Success means
 documented request contracts and real MCP parsing/discovery tests cover the new
 operations without production credentials or live mutations.
 
-The user selected SDK-backed pages CRUD plus a focused authenticated HTTP adapter
-for copying. The branch also contains separately approved README status badges
+We use SDK-backed pages CRUD plus a focused authenticated HTTP adapter
+for copying. The branch also contains README status badges
 and MIT metadata alignment; retain those changes in this PR.
 
 ## Evidence and compatibility baseline
@@ -175,8 +175,8 @@ remain a release/adoption blocker.
 ## Design preparation checklist
 
 - [x] Inspect issue, current client/tools, SDK capabilities, and official sources.
-- [x] Present alternatives; user selected SDK CRUD plus native-copy adapter.
+- [x] Compare alternatives; select SDK CRUD plus a native-copy adapter.
 - [x] Write specification and self-review scope, contracts, safety, and ambiguity.
-- [x] User reviews this written specification.
+- [x] Review the written specification.
 - [x] Write implementation plan after specification approval.
-- [x] User reviews plan and chooses execution method before implementation.
+- [x] Review the implementation plan before implementation.

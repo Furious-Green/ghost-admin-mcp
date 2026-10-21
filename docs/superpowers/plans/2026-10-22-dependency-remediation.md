@@ -1,6 +1,6 @@
 # Dependency Remediation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Historical implementation plan. Technical decisions and verification evidence are retained below.
 
 **Goal:** Clear inherited known dependency advisories while preserving public contracts.
 **Architecture:** Exact patched dependency targets and committed transitive lock;

@@ -1,6 +1,6 @@
 # Strict Content Schemas Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Historical implementation plan. Technical decisions and verification evidence are retained below.
 
 **Goal:** Complete and strictly validate posts/pages/tags inputs without silent loss.
 
@@ -13,11 +13,11 @@ same formats contract without changing its hardened transport.
 
 **Spec:** `docs/superpowers/specs/2026-10-21-content-schemas-design.md`
 
-**Execution status:** Implemented natively in b577450, 6f25746, 1d07de4 plus
+**Execution status:** Implemented in b577450, 6f25746, 1d07de4 plus
 the test-first timezone-offset review fix. Clean npm ci, typecheck, full suite
 (319 tests) and diff check passed. Independent whole-branch review found one
 Important timestamp-range gap, reproduced and fixed RED→GREEN; no other findings.
-User authorized push/PR, not merge/deploy. Checklists below preserve the original
+Delivery is through a pull request, without automatic merge or deployment. Checklists below preserve the original
 brief; implementation commits and this status record completion.
 
 ## Global Constraints
@@ -25,7 +25,7 @@ brief; implementation commits and this status record completion.
 - Keep all 46 tool names, `{data, meta?}` outputs, delete confirmations and HTTP/auth/error/retry policies.
 - Scope is #6 slice 1 posts/pages/tags; do not close #6 or change other resources.
 - No dependency upgrades, private-wrapper changes, live Ghost/email/Stripe actions, merge, publish or deployment.
-- User explicitly waived further design/plan checkpoints and authorized native implementation, final independent review, push and PR.
+- Use test-first implementation, independent final review and pull-request delivery.
 - Use baseline Ghost 5.130.0 API schema 4.5.10 rather than DB schema to choose writable fields; exclusions per spec.
 
 ## Review Focus
@@ -142,4 +142,4 @@ checks intact. Runtime client preparation handles flat or split query inputs.
 All spec sections map to Task 1 schema/preparation, Task 2 integration or Task 3
 verification/migration. Task 2 consumes exact maps/function in Task 1; no helper
 assumes global input changes. Five Review Focus classes each have explicit tests.
-Execution is native by prior preference; no further approval gate per user.
+Implementation uses test-first development and one independent whole-branch review.

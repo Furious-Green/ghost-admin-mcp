@@ -1,12 +1,13 @@
 # Issue #9: bounded remote-client image uploads
 
-## Approved intent
+## Intent and scope
 
 Remote MCP clients can upload supplied image bytes without granting filesystem
-or arbitrary URL access. User approved base64/filename/MIME/ref, 5MiB,
+or arbitrary URL access. The upload contract uses base64/filename/MIME/ref, 5MiB,
 JPEG/PNG/GIF/WebP signatures, in-memory multipart, no redirects/retries/temp
-files, literal `{data,meta?}` response, native TDD/one review/push+PR without
-further pauses. Base merged#20:8e49849. Existing isolated worktree reused.
+files and a literal `{data,meta?}` response. Verification uses test-first
+implementation and one independent review before pull-request delivery.
+Base merged#20:8e49849. Existing isolated worktree reused.
 No real uploads, private-wrapper changes, merge, publication or deployment.
 Existing configuration/executable/MIT/badges/dependencies unchanged. Nine inherited
 advisories remain release/adoption blockers. No themes/files/media/SVG follow-on.

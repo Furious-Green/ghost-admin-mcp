@@ -1,6 +1,6 @@
 # Testable Client Foundation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Historical implementation plan. Technical decisions and verification evidence are retained below.
 
 **Goal:** Resolve issue #2 by making existing tool handlers independently testable, exposing an honest typed client boundary, and adding offline contract tests and CI without expanding Ghost API coverage.
 

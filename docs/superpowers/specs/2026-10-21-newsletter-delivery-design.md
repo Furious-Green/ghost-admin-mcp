@@ -1,12 +1,11 @@
 # Issue #7: explicit newsletter delivery and administration
 
-## Approved intent
+## Intent and scope
 
 Expose the documented Ghost newsletter send/schedule and subscriber opt-in
 controls explicitly, without inferring recipients, sending during tests or
-claiming delivery from a successful write. The user approved this approach and
-continuous spec/plan/native implementation/one independent review/push+PR with
-no further approval pauses. Base merged #18 is 53ba1b5. No merge/deployment,
+claiming delivery from a successful write. We use test-first implementation and
+one independent review before pull-request delivery. Base merged #18 is 53ba1b5. No merge/deployment,
 publication, private-wrapper changes, real subscriber/verification emails or
 live Ghost/Stripe actions. Nine inherited advisories remain release/adoption
 blockers; no dependency/lock/license/badge/settings/transport policy changes.

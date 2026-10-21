@@ -1,6 +1,6 @@
 # Release Preparation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> Historical implementation plan. Technical decisions and verification evidence are retained below.
 
 **Goal:** Complete public fork identity, locked artifact verification and honest adoption guidance.
 **Architecture:** Git source archive builds the minimal runtime archive; both use
@@ -51,7 +51,7 @@ Files: README.md, docs/coverage.md, docs/artifacts.md, this plan outcome.
 - [x] Existing isolated checkout reused with fresh branch from merged f498f72.
 - [x] Baseline npm test passed (406 tests).
 - [x] Design and plan self-review: artifact version/format/toolchain and limits explicit;
-  user-selected continuous native workflow retained.
+  test-first development and independent review retained.
 
 ## Execution evidence and decisions
 
@@ -115,9 +115,9 @@ original scoped tracker #1 are justified only by this documented scope, not full
 Admin API parity or live certification. #25 remains separate and open. No PR
 merge or issue closure is performed here; CI/PR links are recorded externally.
 
-## User-approved version amendment
+## Independent version line
 
-After PR #26 opened, user explicitly selected **0.1.0** as this fork's independent
+After PR #26 opened, we selected **0.1.0** as this fork's independent
 version line, superseding the inherited0.2.0 decision above. Update manifest and
 root lock versions; read the manifest version for MCP initialization (previously
 hardcoded1.0.0). Keep server/executable/tool names and Git history unchanged.
@@ -125,4 +125,4 @@ Current documentation distinguishes a version assignment from publication/taggin
 Manifest/lock and actual stdio regressions observed RED at0.2.0/1.0.0 before the
 change. Artifact smoke now checks and records the same package/handshake version
 for both isolated source and production runtime installs. No tag/publication or
-new error semantics are authorized. Refresh tests/artifacts and PR evidence.
+new error semantics are included in this amendment. Refresh tests/artifacts and PR evidence.

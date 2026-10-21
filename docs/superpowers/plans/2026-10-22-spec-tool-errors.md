@@ -1,6 +1,6 @@
 # Specification-Aligned Tool Errors Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
+> Historical implementation plan. Technical decisions and verification evidence are retained below.
 
 **Goal:** Finish #25 with specification-aligned errors and explicit0.2.0 migration.
 **Architecture:** Retain the public specification-boundary dispatcher and lifecycle
@@ -13,10 +13,10 @@ unknown/disabled and internal request handling errors remain protocol errors.
 54 tools/7 resources/1 prompt/8 deletes/envelopes/strictness/caps and no retries.
 Preserve all old invalid-input cases; change their expected channel deliberately.
 No dependency upgrades, private SDK access, task support, live Ghost, publication,
-releases/deploy/merge or consumer-specific public information. User subsequently
-authorized annotated version tags: v0.1.0 at merged4072575 after verification;
+releases/deploy/merge or consumer-specific public information. The versioning plan
+uses annotated tags: v0.1.0 at merged4072575 after verification;
 v0.2.0 waits for this PR's actual merge, never an unmerged candidate.
-Version0.2.0; manifest/MCP/lock consistent. One independent review, native execution.
+Version0.2.0; manifest/MCP/lock consistent. Test-first implementation and one independent review.
 
 ## Review Focus
 1. A helper accidentally accepts protocol errors as tool results: negative helper tests and raw stdio assertions (Task1).
@@ -51,14 +51,14 @@ existing verify:artifacts; resource/prompt protocol classifications unchanged.
   examples/client handling and explicitly justified retained dispatch/registry.
 - [x] Clean ci/typecheck/full suite/full+production audit/diff; commit then source/
   runtime artifacts and checksums at committed SHA. No actual publication;
-  separately requested annotated tags obey the merge-boundary rule above.
+  annotated version tags follow the merge-boundary rule above.
 - [ ] Independent read-only whole-branch review, fix material findings test-first;
   final gate, template search, push/open #25 PR, verify CI/closing references.
 
 ## Setup
 - [x] Reused existing clean linked checkout on fresh fix/issue-25-spec-errors from
   merged4072575. Baseline411 tests passed. Prior #1/#12 scope remains completed.
-- [x] User-authorized continuous native workflow and specification authority.
+- [x] Test-first implementation and specification-led error classification.
 - [x] Spec/plan self-review: request/schema distinction, budget/internal errors,
   omitted args and SDK mismatch explicit; Task1 supplies Task2 documented contract.
 
@@ -90,7 +90,7 @@ existing verify:artifacts; resource/prompt protocol classifications unchanged.
   passed before review. Source/runtime artifact gate at173fef9 passed, manifest/
   handshake0.2.0 and zeroGhost requests. Exact-head checksums verified.
 - Remote tag listing was empty; only CI workflow exists, with tests/artifact
-  checks and no publish/deploy/upload actions. User-requested v0.1.0 tag will
+  checks and no publish/deploy/upload actions. The planned v0.1.0 tag will
   identify merged #26 (4072575), not this0.2.0 branch. v0.2.0 awaits actual merge.
 
 ## Independent whole-branch review
@@ -106,11 +106,11 @@ Review limits retained explicitly:
   behavior. Cost: ordinary error alignment is not full task/protocol conformance.
 - Live Ghost permissions/side effects remain untested and unauthorized. Cost:
   offline evidence cannot guarantee a particular live instance/credential.
-- Reviewer did not repeat fresh artifact installs; executor's isolated gate and
+- Reviewer did not repeat fresh artifact installs; the implementation's isolated gate and
   exact-head checksums supply that evidence, to be rerun at final commit. Cost:
   clean-install evidence is not a second independent installation run.
-- Tags/PR CI/post-merge operations were outside read-only review. Executor checks
-  tag targets/conflicts/workflows and CI; v0.2.0 waits for user merge. Cost: no
+- Tags/PR CI/post-merge operations were outside read-only review. Release verification checks
+  tag targets/conflicts/workflows and CI; v0.2.0 waits for PR merge. Cost: no
   assurance of operations that have not happened, no release/deploy permission.
 
 ## Issue #25 acceptance audit

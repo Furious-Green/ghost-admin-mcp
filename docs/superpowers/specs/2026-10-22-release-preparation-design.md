@@ -2,15 +2,15 @@
 
 ## Intent and constraints
 Finish #12 and audit the original #1 acceptance checklist, not full Admin UI
-parity. User selected native test-first execution, one independent whole-branch
-review, then push/PR without additional approval pauses. No automatic merges,
+parity. We use test-first implementation and one independent whole-branch
+review before pull-request delivery. No automatic merges,
 publication, tags, releases, deployment, live Ghost actions or consumer adoption.
 Public documentation contains only this public project's details and generic
 consumer guidance. #25's error migration remains separate.
 
 ## Identity
 Use unscoped `ghost-admin-mcp`, `private: true`, public repository/bugs/homepage
-metadata. User-approved follow-up resets this fork to 0.1.0, superseding the
+metadata. The independent versioning decision resets this fork to 0.1.0, superseding the
 initial inherited-version decision; MCP initialization reads the same manifest
 version. This does not create a published/tagged release or alter Git history;
 full commit identifies this preparation. Remove publishConfig; retain original
