@@ -81,6 +81,15 @@ test('stdio initializes and discovers all tools without any Ghost HTTP calls', {
         assert.equal(tool.inputSchema.properties.url,undefined);
         assert.match(tool.description,/5 MiB/);assert.match(tool.description,/writes a file/);assert.match(tool.description,/never automatically retried/);
       }
+      if(tool.name==='themes_upload'){
+        assert.equal(tool.inputSchema.properties.base64.maxLength,13981016);
+        assert.deepEqual(Object.keys(tool.inputSchema.properties).sort(),['base64','filename']);
+        assert.match(tool.description,/active theme files/i);assert.match(tool.description,/permission/);assert.match(tool.description,/never calls/);
+      }
+      if(tool.name==='themes_activate'){
+        assert.deepEqual(Object.keys(tool.inputSchema.properties),['name']);assert.deepEqual(tool.inputSchema.required,['name']);
+        assert.match(tool.description,/public site/);assert.match(tool.description,/permission/);assert.match(tool.description,/Separate from upload/);
+      }
     }
     cursor = page.nextCursor;
   } while (cursor);

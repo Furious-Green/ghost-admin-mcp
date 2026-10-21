@@ -45,6 +45,15 @@ test('theme contract enforces ten MiB before decode, rejects unknowns and requir
   for(const value of [{},{name:' '},{name:'../x'},{name:'x/y'},{name:'x%20y'},{name:'x',activate:true}])assert.throws(()=>activate(value),/Invalid Ghost theme activate/);
 });
 
+test('theme metadata bounds are literal declarations, not claims of decoded content validity',()=>{
+  const archive=fixtures.zip([{name:'one',method:8},{name:'two',method:8}]);
+  // Deliberately dishonest deflate sizes: inspection checks declarations only.
+  for(const entry of archive.entries){archive.bytes.writeUInt32LE(50*1024*1024,entry.local+22);archive.bytes.writeUInt32LE(50*1024*1024,entry.central+24)}
+  assert.equal(prepare(fixtures.input(archive)).bytes.length,archive.bytes.length);
+  archive.bytes.writeUInt32LE(50*1024*1024+1,archive.entries[1].local+22);archive.bytes.writeUInt32LE(50*1024*1024+1,archive.entries[1].central+24);reject(archive.bytes);
+  const many=fixtures.zip(Array.from({length:2000},(_,i)=>({name:`file${i}`,data:''})));assert.equal(prepare(fixtures.input(many)).bytes.length,many.bytes.length);
+});
+
 async function setup(t){const r=require('./helpers/recordingClient.cjs').makeRecordingClient();const m=await require('./helpers/mcpHarness.cjs').openMcpHarness(r.client);t.after(m.close);return {...r,...m,call:(op,args)=>m.mcpClient.callTool({name:`themes_${op}`,arguments:structuredClone(args)})}}
 
 test('theme upload multipart and activation stay separate and retain actual active state and validation metadata',async t=>{

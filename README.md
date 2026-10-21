@@ -11,7 +11,7 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 ## Features
 
 - Ghost Admin API requests with `@tryghost/admin-api` plus focused authenticated native adapters
-- Tools for posts, pages, bounded image uploads, members, member labels, public site information, users, tags, newsletter configuration, webhooks, tiers, offers, staff invites and roles
+- Tools for posts, pages, bounded image/theme uploads and explicit theme activation, members, member labels, public site information, users, tags, newsletter configuration, webhooks, tiers, offers, staff invites and roles
 - Native Ghost post/page copying, creating drafts without client-side reconstruction
 - Explicit Ghost query filters and resource-specific pagination, including supported `limit: "all"`
 - Strict tool inputs and typed-client validation with resource-specific queries, nullable clearing and revision controls
@@ -21,7 +21,7 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 
 ## Current limitations
 
-52 tools are registered; registration is not proof of live API support:
+54 tools are registered; registration is not proof of live API support:
 
 - Tiers/offers/invites/roles use native adapters for twelve supported operations. Contracts are verified against documentation and Ghost 5.130.0 source, not a live server; permissions and version differences still apply.
 - Pagination is returned when Ghost supplies it; this server never invents pagination or automatically fetches additional pages. Available paging controls remain resource-specific.
@@ -157,7 +157,7 @@ API schema lengths/nullability and query options were checked against **Ghost 5.
 
 ## Strict remaining-resource input migration
 
-The second #6 slice makes members/users/newsletters/webhooks strict at both MCP and typed-client boundaries. Nested member label/newsletter objects are strict too. Native tiers/offers/invites/roles remain strict, now with safe-integer paging, tighter enums/ranges and malformed-options rejection. Unknown inputs have no passthrough. Refresh discovery; output envelopes and remaining delete text are unchanged. The current inventory is **52 names**, including the six label/site tools and bounded image upload below, and excluding unsupported newsletter deletion.
+The second #6 slice makes members/users/newsletters/webhooks strict at both MCP and typed-client boundaries. Nested member label/newsletter objects are strict too. Native tiers/offers/invites/roles remain strict, now with safe-integer paging, tighter enums/ranges and malformed-options rejection. Unknown inputs have no passthrough. Refresh discovery; output envelopes and remaining delete text are unchanged. The current inventory is **54 names**, including label/site, bounded image/theme uploads and explicit theme activation below, and excluding unsupported newsletter deletion.
 
 | Resource | Browse queries | Read queries/selectors | Write queries |
 | --- | --- | --- | --- |
@@ -390,6 +390,102 @@ The5MiB cap is this MCP server's policy, not a universal Ghost limit. Minimum
 upload tests are mocked/allowlisted loopback; no live upload or credential
 permission compatibility is claimed.
 
+### Theme ZIP upload and explicit activation
+
+**Both operations can change the public site.** Uploading and activating are
+separate tools, not an automatic workflow. Upload never calls the activation
+endpoint or selects a different active theme, but Ghost can **replace an existing
+same-named theme and immediately reload it if active**. Upload is not harmless
+staging. Back up/review theme changes through your own process before invoking.
+
+`themes_upload` accepts exactly:
+- `filename`: safe ASCII basename1..120 characters, same rule as image uploads,
+  with `.zip` extension (case insensitive). Never a local/client/server path.
+- `base64`: canonical standard base64 with correct padding bits, no whitespace,
+  data URI or URL-safe alphabet. Maximum **13,981,016 characters**, decoded
+  **10,485,760 bytes (10MiB)**. Empty, oversized and noncanonical inputs fail.
+
+There is no MIME/ref/URL/path/activate input or arbitrary header/query option.
+The file part uses fixed `application/zip`. For example, replace the explicitly
+marked placeholder with bytes of a trusted, compatible theme ZIP on your client:
+
+```json
+{"name":"themes_upload","arguments":{"filename":"my-theme.zip","base64":"REPLACE_WITH_CANONICAL_BASE64_OF_THEME_ZIP"}}
+```
+
+Successful data is returned exactly from Ghost, for example:
+
+```json
+{"data":{"name":"my-theme","active":false,"package":{"name":"my-theme"},"templates":[]}}
+```
+
+`active` can also be **true** after upload; never assume false or derive the
+installed name from the filename. Ghost sanitizes names and may refuse default
+theme replacement. Package/templates/warnings/errors and valid `meta` are
+preserved, not interpreted as a new client guarantee. To activate deliberately,
+use Ghost's returned name in a **separate** call:
+
+```json
+{"name":"themes_activate","arguments":{"name":"my-theme"}}
+```
+
+Activation takes only a required nonblank safe name <=191 characters, encodes it
+once in the fixed route, and sends a bodyless PUT. It cannot upload implicitly,
+accept ZIP bytes, choose a default theme, edit general settings or roll back.
+Returned `active:false` remains false rather than fabricated success. Missing,
+malformed, unauthorized and incompatible themes remain errors. HTTP theme
+validation errors expose bounded status/category (`ThemeValidationError`), not
+raw gscan paths, diagnostics or server-echoed bytes. Inspect Ghost for full
+validation details. Successful theme warning/error metadata remains unchanged.
+
+**ZIP subset and limits:** metadata inspection accepts classic single-disk ZIP,
+stored/deflate, ASCII/UTF8 names and consistent optional data descriptors/comments.
+It checks central/local consistency, offsets and contiguous nonoverlapping ranges;
+maximum **2000 entries**, **1024-byte entry names**, and **100MiB total declared
+uncompressed size**. It rejects ZIP64, encryption/multidisk/unsupported compression,
+alternate Unicode-path/AES extras, malformed records, symlinks/special files,
+unsafe absolute/traversal/drive/backslash/control paths, Windows device names,
+duplicates (normalized/case-insensitive), file/directory aliases and file-parent
+conflicts. Empty/directory-only archives and prefixed/trailing/gapped records are
+rejected. Some ZIP writers/variants therefore require repacking; this is not a
+complete ZIP-format implementation.
+
+**No local extraction, decompression, CRC-content verification, filesystem reads
+or temporary files occur.** Declared sizes can lie: these checks do not prove
+safe actual expansion, compression ratio, archive integrity, absence of malware
+or theme compatibility. Ghost/gscan remains responsible for actual extraction
+and validation. There is no local package.json/layout guess or template execution.
+No files need cleaning up locally on success, rejection or failure.
+
+Multipart body is capped at **10MiB+8192 bytes**; default responses for both
+theme operations at **1MiB decompressed**. Default native transport uses30s
+timeout, no redirects, no automatic retries and no proxy discovery. All caps
+are per request, not upstream MCP JSON-parsing or total concurrency guarantees;
+encoded/decoded/multipart buffers can coexist. Injected executors own their
+transport policy. Image limits and existing native/SDK policies are unchanged.
+After timeout/error/malformed response, the theme change may already have taken
+effect: inspect Ghost before manual retry. No automatic recovery/delete/rollback.
+
+**Credentials and hosting:** use the existing configured Admin API key or staff
+token with the corresponding Ghost **theme add** (upload) / **theme activate**
+permission. Ghost5.130.0's Admin Integration fixture grants theme management;
+Owner/Administrator staff can manage themes, while Editor-style roles are
+read-only for themes. This does not promise every key, hosting plan or version
+permits custom themes. Ghost enforces permission and `customThemes` plan limits;
+the client never escalates or switches authentication.
+
+Source reference is **Ghost5.130.0**, not every5.x minor, other majors or live
+compatibility. Local ZIP limits are MCP policy, not universal Ghost limits.
+Evidence: [theme docs](https://docs.ghost.org/admin-api/themes/overview),
+[endpoints](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/server/api/endpoints/themes.js),
+[storage/active overwrite](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/server/services/themes/storage.js),
+[validation](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/server/services/themes/validate.js),
+[returned metadata](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/server/services/themes/to-json.js)
+and [permission fixtures](https://github.com/TryGhost/Ghost/blob/v5.130.0/ghost/core/core/server/data/schema/fixtures/fixtures.json).
+All tests use mocked/allowlisted loopback endpoints: no live theme upload or
+activation. Browse/download/delete/install-from-GitHub and file/media uploads
+are not silently included.
+
 ## Available Resources
 
 The following entity families have registered tool names (see the limitations above; the separately registered MCP resources are placeholders):
@@ -408,7 +504,7 @@ The following entity families have registered tool names (see the limitations ab
 
 ## Available Tools
 
-Below is an inventory of the 52 registered tool names, not a full API coverage guarantee. Permissions and Ghost version may restrict operations.
+Below is an inventory of the 54 registered tool names, not a full API coverage guarantee. Permissions and Ghost version may restrict operations.
 
 ### Posts
 - **Browse Posts**: List posts with optional filters, pagination, and ordering.
@@ -473,6 +569,10 @@ Requests use native POST `/posts/{id}/copy/` and `/pages/{id}/copy/` with no bod
 
 ### Images
 - **Upload Image** (`images_upload`): Upload bounded supplied base64 JPEG/PNG/GIF/WebP bytes to configured Ghost storage; no local paths or URL fetching.
+
+### Themes
+- **Upload Theme** (`themes_upload`): Upload bounded supplied base64 ZIP; may replace/reload active files. Never calls activation automatically.
+- **Activate Theme** (`themes_activate`): Explicitly select an installed theme by name; changes the public site.
 
 ### Newsletters
 - **Browse Newsletters**: List newsletters.
