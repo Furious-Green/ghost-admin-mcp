@@ -24,10 +24,10 @@
     "license": "MIT",
     "type": "commonjs",
     "dependencies": {
-        "@modelcontextprotocol/sdk": "^1.10.1",
+        "@modelcontextprotocol/sdk": "1.32.1",
         "@tryghost/admin-api": "^1.13.13",
-        "axios": "^1.8.4",
-        "zod": "^3.24.3"
+        "axios": "1.20.0",
+        "zod": "3.25.76"
     },
     "devDependencies": {
         "@types/axios": "^0.9.36",

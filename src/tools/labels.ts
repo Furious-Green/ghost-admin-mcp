@@ -17,8 +17,12 @@ export function registerLabelTools(server: McpServer, client: GhostClient): void
                 return {content: [{type: 'text', text: operation === 'delete'
                     ? `Label with id ${(parsed as {id: string}).id} deleted.` : JSON.stringify(result, null, 2)}]};
             });
-        if (operation === 'read') registered.inputSchema = z.object(shapes.read).strict().superRefine((value, ctx) => {
-            if (Number(value.id !== undefined) + Number(value.slug !== undefined) !== 1) ctx.addIssue({code: z.ZodIssueCode.custom, message: 'Provide exactly one id or slug'});
-        }) as unknown as typeof registered.inputSchema;
+        if (operation === 'read') {
+            // Keep an object schema visible to SDK discovery while dispatching
+            // through the shared refined parser (exactly one ID/slug).
+            const schema = z.object(shapes.read).strict();
+            schema.safeParseAsync = schemas.read.safeParseAsync.bind(schemas.read);
+            registered.inputSchema = schema;
+        }
     }
 }

@@ -20,7 +20,7 @@ test('tools and server construction do not load credentials, connect, or exit on
       'client/nativeAdmin', 'client/nativeResponses', 'client/commerceClient', 'client/staffClient', 'client/responses', 'client/sdkRequest',
       'schemas/tiers', 'schemas/offers', 'schemas/staff', 'schemas/query', 'schemas/content', 'schemas/postDelivery', 'schemas/tags', 'schemas/accounts', 'client/contentRequest', 'client/accountRequest', 'tools/registerStrictTool', 'tools/registerAccountTools', 'tools/contentSchemas', 'prompts', 'resources',
       'schemas/labels', 'schemas/images', 'client/labelsClient', 'client/siteClient', 'client/imageMultipart', 'client/imagesClient',
-      'schemas/uploads', 'schemas/themes', 'schemas/zipArchive', 'client/fileMultipart', 'client/themesClient', 'protocolReads',
+      'schemas/uploads', 'schemas/themes', 'schemas/zipArchive', 'client/fileMultipart', 'client/themesClient', 'protocolReads', 'tools/toolDispatch',
       ...['posts','pages','members','users','tags','tiers','offers','newsletters','invites','roles','webhooks','labels','site','images','themes'].map(name => 'tools/' + name)]) {
       require('./build/' + module + '.js');
     }

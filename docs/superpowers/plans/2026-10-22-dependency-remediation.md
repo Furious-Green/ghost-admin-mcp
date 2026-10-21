@@ -43,10 +43,12 @@ unknown tool and unchanged callback isError, no HTTP.
 ### Task 2: Public tool compatibility dispatcher
 **Files:** create src/tools/toolDispatch.ts; modify registerStrictTool/createServer;
 extend tool-compatibility tests and dependency-policy imports as needed.
-**Interfaces:** trackRegisteredTool(server,name,registered,callback):void;
+**Interfaces:** trackRegisteredTool(server,name,registered,makeSchema):void;
 installToolDispatcher(server):void; exported MAX_TOOL_INPUT_ELEMENTS=10000.
 Registry uses current schema and callback, wrapped public update keeps keys
 consistent; high-level tool list unchanged. No SDK private field access.
+Use the current public registered.handler instead of copying callbacks so callback
+updates remain synchronized; makeSchema retains strictness/sanitizers on schema updates.
 - [ ] RED per-server/disabled/update/rename/remove and malformed/cyclic/deep/wide
   budget tests; bounded error/no callback tests. Existing tool guard regressions
   remain untouched unless target genuinely changes harmless schema formatting.
