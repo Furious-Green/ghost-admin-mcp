@@ -126,3 +126,26 @@ test('internal multipart is restricted to the upload route and bounded before HT
   await assert.rejects(send('tiers.add',{multipart:{body:Buffer.from('x'),boundary}}));
   assert.equal(called,0);
 });
+
+test('MCP image schema errors are bounded and never echo invalid enum values or unknown key names',async t=>{
+  const r=await setup(t),marker='PRIVATE_IMAGE_MARKER_'+'x'.repeat(10000);
+  for(const extra of [{mime_type:marker},{[marker]:'value'}]){
+    await assert.rejects(r.call({...fixtures.input(),...extra}),error=>{
+      assert.ok(!error.message.includes('PRIVATE_IMAGE_MARKER_'));assert.ok(error.message.length<1024);
+      assert.match(error.message,/Invalid Ghost image upload input/);return true;
+    });
+  }
+  assert.equal(r.requests.length,0);
+});
+
+test('noncanonical padding bits are rejected before allocating decoded image buffers',()=>{
+  const bytes=Buffer.alloc(5*1024*1024);fixtures.images[1].bytes.copy(bytes);
+  const canonical=bytes.toString('base64'),alphabet='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  const malformed=canonical.slice(0,-2)+alphabet[alphabet.indexOf(canonical.at(-2))+1]+'=';
+  const original=Buffer.from;let decoded=0;
+  Buffer.from=function(...args){if(args[1]==='base64')decoded++;return Reflect.apply(original,this,args)};
+  try{
+    for(const base64 of [malformed,'AB==','ABC='])assert.throws(()=>prepare({...fixtures.input(),base64}),/Invalid Ghost image upload/);
+  }finally{Buffer.from=original}
+  assert.equal(decoded,0);
+});

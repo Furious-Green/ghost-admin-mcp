@@ -27,6 +27,9 @@ export function prepareImageUpload(value: unknown): {input: ImageUploadInput; by
     const padding = encoded.endsWith('==') ? 2 : encoded.endsWith('=') ? 1 : 0;
     const size = encoded.length / 4 * 3 - padding;
     if (size <= 0 || size > MAX_IMAGE_BYTES) return invalid();
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    const lastSextet = alphabet.indexOf(encoded[encoded.length - padding - 1]);
+    if (padding > 0 && (lastSextet & (padding === 2 ? 15 : 3)) !== 0) return invalid();
     const extension = input.filename.split('.').pop()?.toLowerCase() ?? '';
     if (!extensions[input.mime_type].includes(extension)) return invalid();
     const bytes = Buffer.from(encoded, 'base64');

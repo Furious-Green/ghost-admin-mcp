@@ -107,4 +107,26 @@ unrelated uploads or filesystem convenience paths.
 - No live uploads, filesystem convenience input, local temporary files, private
   changes, publication, deployment or merge. README includes per-request limits
   and header-only validation caveats, not a process-wide resource/security claim.
-- Pending independent whole-branch review, final verification and authorized PR.
+- Independent read-only whole-branch review8e49849..c142989: no Critical findings;
+  one Important MCP validation-error echo finding and one allocation-order
+  discrepancy. Regraded the latter as an Important contract mismatch with the
+  explicit pre-allocation Review Focus, not an unbounded-memory vulnerability.
+  Both resolved in one fix pass with regressions observed RED->GREEN:
+  long enum/unknown-key values no longer appear in schema errors; canonical
+  padding bits rejected before decoded allocation, including exact5MiB input.
+- The existing strict registration helper now accepts an opt-in validation-error
+  message and replaces only failed async parsing diagnostics for this tool;
+  discovery retains the real schema and other tools retain existing behavior.
+  Roundtrip equality remains a defensive check after byte decoding. Final suite
+  **371/371**, typecheck/diff pass. No second independent review requested.
+- Review limitations stand: no live permission/storage-adapter/other-version
+  compatibility, full image validity/scanning, process-wide concurrency guarantees
+  or enforcement by custom executors. These are explicitly outside claims; source
+  reference is5.130.0, default transport policy is tested. Nine inherited advisories
+  remain release/adoption blockers, not remediated by this change.
+- Acceptance#9 audited: remote input/size/type contract specified before code;
+  literal multipart URL/ref output; no arbitrary path/URL inputs; bounded memory
+  and no local files/cleanup on success or failure; actual mocked-only multipart,
+  invalid/oversized/error paths; clear upload-vs-assigned-URL distinction. Eligible
+  for closing#9. Remaining: final verification, authorized push/PR and both CI
+  checks; no merge, publication, deployment or private adoption.
