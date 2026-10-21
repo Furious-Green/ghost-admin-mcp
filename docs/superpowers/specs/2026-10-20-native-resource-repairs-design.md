@@ -2,7 +2,7 @@
 
 Date: 2026-10-20
 Issue: https://github.com/Furious-Green/ghost-admin-mcp/issues/3
-Status: Written specification approved by the user on 2026-10-20.
+Status: Design accepted on 2026-10-20.
 
 ## Intent
 
@@ -11,7 +11,7 @@ typed requests for supported Ghost operations, and stop advertising operations
 without matching routes. Help users migrating from the original implementation
 understand the deliberate compatibility changes through a README migration note.
 
-The user approved removing tiers_delete, offers_delete, and roles_read rather than
+We remove tiers_delete, offers_delete, and roles_read rather than
 retaining error-only compatibility stubs. Implement the other twelve operations
 using native adapters, reusing the authentication and HTTP safeguards introduced
 for post/page copy. No SDK-wide rewrite or dependency upgrade is needed.
@@ -241,6 +241,6 @@ release/adoption approval.
 - [x] Inspect current handlers, merged foundation, issue, docs, and pinned source.
 - [x] Approve twelve native operations, removal of three stubs, and README migration note.
 - [x] Write specification; self-review scope, contracts, safety, and source/doc differences.
-- [x] User reviews this written specification.
+- [x] Review the written specification.
 - [x] Write implementation plan after specification approval.
-- [x] User reviews plan before native execution and independent final review.
+- [x] Review the implementation plan before implementation and independent final review.

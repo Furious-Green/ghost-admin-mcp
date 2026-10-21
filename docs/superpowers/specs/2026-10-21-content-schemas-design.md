@@ -3,11 +3,10 @@
 ## Intent and authorization
 
 Make supported content queries and writes usable without silent input loss or
-ambiguous requests. The user selected strict validation and approved the
-posts/pages/tags boundary. On 2026-10-21 they explicitly requested completion of
-the design, implementation plan, implementation and push/PR without another
-implementation-plan approval pause. Execute natively with one independent final
-review; do not merge, publish, deploy or modify the private HTTP wrapper.
+ambiguous requests. We use strict validation at the posts/pages/tags boundary.
+The scope covers design, implementation, tests and pull-request delivery, with
+one independent final review. Automatic merge, publication, deployment and
+consumer-specific integration changes are outside this work.
 
 This is the first of two #6 slices. Do not close #6: remaining resources' queries,
 selectors and validation require the second slice. Keep all 46 tool names,

@@ -132,7 +132,7 @@ Metadata is retained as supplied by Ghost, including unknown keys and nested val
 {"data":{"id":"newsletter1","sender_email":null},"meta":{"sent_email_verification":["sender_email"]}}
 ```
 
-This reports pending verification, **not** an already-active new sender address. The returned `sender_email` stays unchanged until verification. Opt-in counts are preserved when Ghost returns them, without interpreting or fabricating them; see explicit delivery and administration below. Private consumers must explicitly adapt to this response change before separately approved adoption.
+This reports pending verification, **not** an already-active new sender address. The returned `sender_email` stays unchanged until verification. Opt-in counts are preserved when Ghost returns them, without interpreting or fabricating them; see explicit delivery and administration below. Update integrations to parse this response format before upgrading.
 
 ## Strict content input migration
 

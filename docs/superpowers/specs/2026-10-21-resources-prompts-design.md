@@ -1,11 +1,11 @@
 # Issue #11: real resources and bounded HTML summarization source
 
-## Approved intent and boundaries
+## Intent and boundaries
 
 Replace seven fake reads with real injected-client reads; preserve URI/name
-discovery and54 tools,8 delete confirmations. User approved seven JSON resources,
+discovery and54 tools,8 delete confirmations. The resource contract uses seven JSON resources,
 public blog info, safe IDs/errors, explicit HTML prompt up to100000 characters,
-untrusted-source separation, offline TDD/one review/push+PR without more pauses.
+untrusted-source separation, offline tests and one independent review before pull-request delivery.
 Base merged#22:02e536b. No live Ghost mutations/emails/theme changes, private
 adoption, deployment/publication or merge. Config/executable/MIT/badges/dependencies
 and tools remain unchanged;9 advisories remain release/adoption blockers.

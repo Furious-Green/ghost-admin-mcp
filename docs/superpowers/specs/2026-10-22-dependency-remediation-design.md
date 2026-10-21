@@ -1,10 +1,10 @@
 # Issue #12, slice1: dependency remediation without contract drift
 
-## Approved intent and scope
+## Intent and scope
 
 First remove known dependency advisories, then separately prepare fork metadata,
-artifacts and release documentation. User approved this sequence and continuous
-native TDD/one independent review/push+PR workflow. This slice is public-project
+artifacts and release documentation. We use this sequence with test-first
+implementation and one independent review before pull-request delivery. This slice is public-project
 maintenance only; public notes contain no consumer-specific environments,
 architecture, configuration or URLs. No publication/tag/release/deployment,
 live Ghost actions, external service changes or automatic consumer updates.

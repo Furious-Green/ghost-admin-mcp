@@ -1,6 +1,6 @@
 # Remaining Resource Schemas Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Historical implementation plan. Technical decisions and verification evidence are retained below.
 
 **Goal:** Complete #6 with strict remaining-resource inputs and supported queries.
 **Architecture:** Shared raw-shape maps and pure account request validation feed
@@ -9,18 +9,18 @@ and existing transport while tightening input checks.
 **Tech Stack:** Existing TypeScript/Zod 3/pinned Ghost and MCP SDKs/Node 22 tests.
 **Spec:** `docs/superpowers/specs/2026-10-21-remaining-schemas-design.md`
 
-**Execution status:** Native implementation complete. Clean npm ci, typecheck,
+**Execution status:** Implementation complete. Clean npm ci, typecheck,
 334 tests and diff check passed. Independent whole-branch review against aa85b40
 reproduced those results with no Critical/Important findings and confirmed #6
 closure scope. One deferred minor: repeat the README newsletter-delete warning
 in its MCP discovery description. Nine inherited dependency advisories unchanged.
-No merge/deployment/private adoption authorized. The original checklists below
+Automatic merge, deployment and downstream adoption are outside this work. The original checklists below
 are the preserved brief; commits and this status record execution completion.
 
 ## Global Constraints
 - All 46 names, `{data, meta?}`, delete confirmations, settings and HTTP/auth/retry policies stay unchanged.
 - No dependency/lock/license changes, private wrapper, live Ghost/email/Stripe actions, merge or deployment.
-- Approach approved; native execution and one independent final review; push/PR authorized without further approval pauses.
+- Use test-first implementation, one independent final review and pull-request delivery.
 - Ghost v5.130.0 source baseline, v5.0 minimum header; no live compatibility claim.
 - No arbitrary proxy; send/cancel/opt-in controls and newsletter delete capability stay #7.
 

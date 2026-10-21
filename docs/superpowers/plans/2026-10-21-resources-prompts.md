@@ -1,6 +1,6 @@
 # Resources and Prompts Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> Historical implementation plan. Technical decisions and verification evidence are retained below.
 
 **Goal:** Complete#11 real resources and explicit bounded HTML prompt retrieval.
 **Architecture:** Inject resource registration into existing server; shared safe
@@ -16,7 +16,7 @@ read boundary plus URI ID validation; strict prompt args and JSON source constru
 -Strict args/IDs <=191, safe errors, no diagnostics/console logs; no new deps,
   live reads/mutations/emails/private changes/merge/deploy/publication.
 -Existing client/transport/config/MIT/badges unchanged;9 advisories remain blockers.
--Approved native TDD/one whole-branch review/push+PR without additional pauses.
+- Test-first implementation, one independent whole-branch review and pull-request delivery.
 
 ## Review Focus
 1. Raw percent-encoded resource variables decode once, preserve case, reject nested escaping/traversal/URI structure before injected clients (Task1).

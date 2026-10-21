@@ -1,13 +1,13 @@
 # Specification-aligned tool errors (#25)
 
-## Approved intent
-The user selected the MCP specification, not implementation defaults, as the
-authority. This supersedes #25's initial native-SDK preference where they differ.
-Use the established continuous native TDD/spec/plan/one-independent-review/PR
-workflow, without new approval pauses. Base is merged #26 (4072575), fork0.1.0.
+## Intent and scope
+We use the MCP specification, not SDK implementation defaults, as the authority
+for error classification. This supersedes #25's initial native-SDK preference
+where they differ. Verification uses test-first implementation and one independent
+whole-branch review before pull-request delivery. Base is merged #26 (4072575), fork0.1.0.
 No merge, publication, deployment, live Ghost actions or consumer adoption.
-Subsequent user request authorizes annotated version tags after verification:
-v0.1.0 at merged4072575 at the end; v0.2.0 only after this PR is merged. Check
+The versioning plan uses annotated tags after verification:
+v0.1.0 at merged4072575; v0.2.0 only after this PR is merged. Check
 existing tags and workflow side effects first; never move an existing tag.
 Public files contain only public-project details and generic consumer guidance.
 

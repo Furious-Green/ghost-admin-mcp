@@ -1,10 +1,10 @@
 # Issue #8: member labels and site information
 
-## Approved intent and boundaries
+## Intent and boundaries
 
 Add five standalone label tools and one public site-read tool to the public
-single-site server. User approved the approach and continuous spec/plan/native
-TDD/one independent review/push+PR without further pauses. Base: merged #19,
+single-site server. We use test-first implementation and one independent review
+before pull-request delivery. Base: merged #19,
 7a6cad2. Preserve executable/configuration, MIT/badges, strict unknown-input
 rejection, existing member relationships and `{data, meta?}` output contract.
 No private adoption, merge, deployment, publication, live Ghost/email/Stripe
