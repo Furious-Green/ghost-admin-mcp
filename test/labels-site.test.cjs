@@ -1,5 +1,6 @@
 const {test,after}=require('node:test');
 const assert=require('node:assert/strict');
+const {assertToolError}=require('./helpers/toolError.cjs');
 after(require('./helpers/networkGuard.cjs').blockNetwork());
 const {makeRecordingClient}=require('./helpers/recordingClient.cjs');
 const {openMcpHarness}=require('./helpers/mcpHarness.cjs');
@@ -39,7 +40,7 @@ test('label MCP schemas reject unknown, malformed and ambiguous inputs before in
     ['read',{}],['read',{id:'one',slug:'vip'}],['read',{slug:'../vip'}],['read',{id:'%2e'}],['read',{id:'one/two'}],
     ['add',{name:' '}],['add',{name:'a'.repeat(192)}],['add',{name:'A',slug:null}],['add',{name:'A',created_at:'now'}],
     ['edit',{id:'one',name:null}],['edit',{slug:'vip',name:'A'}],['delete',{id:'one',include:'count.members'}],
-  ])await assert.rejects(m.mcpClient.callTool({name:`labels_${op}`,arguments:args}),/Invalid arguments/);
+  ])await assertToolError(m.mcpClient.callTool({name:`labels_${op}`,arguments:args}),/Invalid arguments/);
   assert.equal(called,0);assert.equal(r.requests.length,0);
 });
 
@@ -87,7 +88,7 @@ test('site empty-input validation protects both direct and injected clients',asy
   const r=makeRecordingClient();let called=0;
   const m=await openMcpHarness({...r.client,site:{read:async()=>{called++;return {data:{}}}}});t.after(m.close);
   for(const input of [{url:'https://other.invalid/'},{fields:'title'},{settings:true},{key:'secret'}]){
-    await assert.rejects(m.mcpClient.callTool({name:'site_read',arguments:input}),/Invalid arguments/);
+    await assertToolError(m.mcpClient.callTool({name:'site_read',arguments:input}),/Invalid arguments/);
     await assert.rejects(r.client.site.read(input));
   }
   for(const options of [null,[],{url:'https://other.invalid/'},{fields:'title'}])await assert.rejects(r.client.site.read({},options));

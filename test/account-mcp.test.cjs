@@ -1,5 +1,6 @@
 const {test,after}=require('node:test');
 const assert=require('node:assert/strict');
+const {assertToolError}=require('./helpers/toolError.cjs');
 after(require('./helpers/networkGuard.cjs').blockNetwork());
 const {makeRecordingClient}=require('./helpers/recordingClient.cjs');
 const {openMcpHarness}=require('./helpers/mcpHarness.cjs');
@@ -39,7 +40,7 @@ test('MCP account writes retain null false arrays and split include away from bo
 test('all remaining SDK tool schemas reject unknown keys and invalid operation-specific fields',async t=>{
   const r=await setup(t);let count=0;
   for(const resource of ['members','users','newsletters','webhooks'])for(const [op,input]of Object.entries(families[resource])){
-    await assert.rejects(r.call(`${resource}_${op}`,{...input,unknown:'SECRET'}),/Invalid arguments/);count++;
+    await assertToolError(r.call(`${resource}_${op}`,{...input,unknown:'SECRET'}),/Invalid arguments/);count++;
   }
   assert.equal(count,16);
   for(const [name,args]of [
@@ -49,7 +50,7 @@ test('all remaining SDK tool schemas reject unknown keys and invalid operation-s
     ['newsletters_edit',{id:'one',title_alignment:'right'}],['newsletters_edit',{id:'one',opt_in_existing:true}],
     ['webhooks_edit',{id:'one',target_url:'file:///secret'}],['users_read',{id:'../one'}],
     ['newsletters_read',{id:'one',filter:'status:active'}],
-  ])await assert.rejects(r.call(name,args),/Invalid arguments/);
+  ])await assertToolError(r.call(name,args),/Invalid arguments/);
   assert.equal(r.requests.length,0);
 });
 
@@ -89,7 +90,7 @@ test('MCP native audit rejects unsupported tier includes unsafe integers and off
     ['tiers_browse',{page:Number.MAX_SAFE_INTEGER+1}],['invites_browse',{limit:Number.MAX_SAFE_INTEGER+1}],
     ['tiers_add',{name:'A',visibility:'private'}],
     ['offers_add',{name:'A',code:'a',cadence:'week',duration:'once',amount:10,tier_id:'one',type:'percent'}],
-  ])await assert.rejects(r.call(name,args),/Invalid arguments/);
+  ])await assertToolError(r.call(name,args),/Invalid arguments/);
   const range=await r.call('offers_add',{name:'A',code:'a',cadence:'month',duration:'once',amount:101,tier_id:'one',type:'percent'});
   assert.equal(range.isError,true);assert.equal(r.requests.length,0);
 });

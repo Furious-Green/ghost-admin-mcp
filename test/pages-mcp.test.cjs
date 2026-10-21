@@ -1,5 +1,6 @@
 const {test, after} = require('node:test');
 const assert = require('node:assert/strict');
+const {assertToolError}=require('./helpers/toolError.cjs');
 const {blockNetwork} = require('./helpers/networkGuard.cjs');
 after(blockNetwork());
 const {makeRecordingClient} = require('./helpers/recordingClient.cjs');
@@ -60,31 +61,31 @@ test('MCP rejects missing/both page selectors before dispatch', async t => {
     assert.equal(result.isError, true);
     assert.equal(result.content[0].text, 'Provide exactly one page selector: id or slug.');
   }
-  for (const args of [{id: ''}, {slug: ' '}]) await assert.rejects(call('pages_read', args), /Invalid arguments/);
+  for (const args of [{id: ''}, {slug: ' '}]) await assertToolError(call('pages_read', args), /Invalid arguments/);
   assert.equal(requests.length, 0);
 });
 test('MCP validates page pagination, formats and edit timestamp before dispatch', async t => {
   const {call, requests} = await setup(t);
   for (const args of [{page: 0}, {limit: -1}, {limit: 1.5}, {formats: 'unknown'}]) {
-    await assert.rejects(call('pages_browse', args), /Invalid arguments/);
+    await assertToolError(call('pages_browse', args), /Invalid arguments/);
   }
-  await assert.rejects(call('pages_edit', {id: 'abc123'}), /updated_at/);
-  await assert.rejects(call('pages_copy', {id: ''}), /Invalid arguments/);
-  await assert.rejects(call('posts_copy', {id: 'abc123', formats: 'unknown'}), /Invalid arguments/);
+  await assertToolError(call('pages_edit', {id: 'abc123'}), /updated_at/);
+  await assertToolError(call('pages_copy', {id: ''}), /Invalid arguments/);
+  await assertToolError(call('posts_copy', {id: 'abc123', formats: 'unknown'}), /Invalid arguments/);
   for (const id of ['../abc', '%2e%2e', 'abc?other=1']) {
-    await assert.rejects(call('pages_copy', {id}), /Invalid arguments/);
+    await assertToolError(call('pages_copy', {id}), /Invalid arguments/);
   }
   assert.equal(requests.length, 0);
 });
 test('MCP page writes reject post-only and unknown fields while retaining valid content', async t => {
   const {call, requests} = await setup(t);
   const content = {title: 'About', lexical: '{"root":{}}', custom_template: 'about', tags: ['About', {id: 'tag1'}], authors: ['author@example.invalid', {id: 'author1'}], feature_image: 'https://images.invalid/about.jpg', feature_image_alt: 'About', meta_title: 'SEO', meta_description: 'Description', published_at: timestamp};
-  await assert.rejects(call('pages_add', {...content, email_only: true, newsletter: 'weekly', send: true, unknown: 'discard'}), /Invalid arguments/);
+  await assertToolError(call('pages_add', {...content, email_only: true, newsletter: 'weekly', send: true, unknown: 'discard'}), /Invalid arguments/);
   assert.equal(requests.length, 0);
   await call('pages_add', content);
   assert.deepEqual(requests[0].data, {pages: [content]});
   assert.deepEqual(requests[0].params, {});
-  await assert.rejects(call('pages_edit', {...content, id: 'abc123', updated_at: timestamp, email_only: true}), /Invalid arguments/);
+  await assertToolError(call('pages_edit', {...content, id: 'abc123', updated_at: timestamp, email_only: true}), /Invalid arguments/);
   await call('pages_edit', {...content, id: 'abc123', updated_at: timestamp});
   assert.deepEqual(requests[1].data, {pages: [{...content, updated_at: timestamp}]});
   assert.deepEqual(requests[1].params, {});
@@ -127,7 +128,7 @@ for (const resource of ['posts', 'pages']) {
 test('MCP copy rejects overrides and does not invent success on malformed responses', async t => {
   const {call, enqueueResponse, requests} = await setup(t);
   enqueueResponse({pages: [copied]});
-  await assert.rejects(call('pages_copy', {id: 'abc123', title: 'override', status: 'published', html: '<p>Ignored</p>', newsletter: 'weekly'}), /Invalid arguments/);
+  await assertToolError(call('pages_copy', {id: 'abc123', title: 'override', status: 'published', html: '<p>Ignored</p>', newsletter: 'weekly'}), /Invalid arguments/);
   assert.equal(requests.length, 0);
   await call('pages_copy', {id: 'abc123'});
   assert.equal(requests[0].data, undefined);
@@ -145,7 +146,7 @@ test('page MCP selectors cannot escape the page resource route', async t => {
     for (const [name, args] of [
       ['pages_read', {id: selector}], ['pages_read', {slug: selector}],
       ['pages_edit', {id: selector, updated_at: timestamp}], ['pages_delete', {id: selector}],
-    ]) await assert.rejects(call(name, args), /Invalid arguments/);
+    ]) await assertToolError(call(name, args), /Invalid arguments/);
   }
   assert.equal(requests.length, 0);
 });

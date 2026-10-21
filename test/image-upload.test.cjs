@@ -1,5 +1,6 @@
 const {test,after}=require('node:test');
 const assert=require('node:assert/strict');
+const {assertToolError}=require('./helpers/toolError.cjs');
 after(require('./helpers/networkGuard.cjs').blockNetwork());
 const fixtures=require('./helpers/imageFixtures.cjs');
 function prepare(input){return require('../build/schemas/images.js').prepareImageUpload(input)}
@@ -130,7 +131,7 @@ test('internal multipart is restricted to the upload route and bounded before HT
 test('MCP image schema errors are bounded and never echo invalid enum values or unknown key names',async t=>{
   const r=await setup(t),marker='PRIVATE_IMAGE_MARKER_'+'x'.repeat(10000);
   for(const extra of [{mime_type:marker},{[marker]:'value'}]){
-    await assert.rejects(r.call({...fixtures.input(),...extra}),error=>{
+    await assertToolError(r.call({...fixtures.input(),...extra}),error=>{
       assert.ok(!error.message.includes('PRIVATE_IMAGE_MARKER_'));assert.ok(error.message.length<1024);
       assert.match(error.message,/Invalid Ghost image upload input/);return true;
     });

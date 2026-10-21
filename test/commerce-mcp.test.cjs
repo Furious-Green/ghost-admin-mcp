@@ -1,5 +1,6 @@
 const {test, after} = require('node:test');
 const assert = require('node:assert/strict');
+const {assertToolError}=require('./helpers/toolError.cjs');
 after(require('./helpers/networkGuard.cjs').blockNetwork());
 const {makeRecordingClient} = require('./helpers/recordingClient.cjs');
 async function harness(t) {
@@ -31,7 +32,7 @@ test('real MCP rejects legacy selectors, unknown options, immutable edits and un
     ['offers_read', {code: 'sale'}], ['offers_read', {id: 'one', code: 'sale'}],
     ['offers_browse', {page: 1}], ['offers_browse', {order: 'name asc'}], ['offers_browse', {limit: 1}],
     ['tiers_browse', {unknown: true}], ['tiers_read', {id: '../posts/x'}], ['offers_edit', {id: 'one', amount: 20}],
-  ]) await assert.rejects(r.mcpClient.callTool({name, arguments: args}), /Invalid arguments/);
+  ]) await assertToolError(r.mcpClient.callTool({name, arguments: args}), /Invalid arguments/);
   assert.equal(r.requests.length, 0);
 });
 

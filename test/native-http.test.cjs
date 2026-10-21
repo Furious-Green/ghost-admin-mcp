@@ -1,5 +1,6 @@
 const {test, after} = require('node:test');
 const assert = require('node:assert/strict');
+const {assertToolError}=require('./helpers/toolError.cjs');
 const http = require('node:http');
 const {once} = require('node:events');
 const {config} = require('./helpers/fixtures.cjs');
@@ -185,8 +186,8 @@ test('remaining account MCP encodes email once and separates query controls on r
   assert.deepEqual(JSON.parse(f.requests[6].body),{webhooks:[{name:null,secret:null}]});
   assert.deepEqual(f.requests.map(r=>r.method),['GET','GET','GET','PUT','PUT','GET','PUT']);
   for(const r of f.requests){assert.equal(r.headers['accept-version'],'v5.0');assert.match(r.headers.authorization,/^Ghost /)}
-  await assert.rejects(m.mcpClient.callTool({name:'members_read',arguments:{id:'one',fields:'id'}}),/Invalid arguments/);
-  await assert.rejects(m.mcpClient.callTool({name:'tiers_read',arguments:{id:'one',include:'benefits'}}),/Invalid arguments/);
+  await assertToolError(m.mcpClient.callTool({name:'members_read',arguments:{id:'one',fields:'id'}}),/Invalid arguments/);
+  await assertToolError(m.mcpClient.callTool({name:'tiers_read',arguments:{id:'one',include:'benefits'}}),/Invalid arguments/);
   assert.equal(f.requests.length,7);
 });
 
@@ -225,7 +226,7 @@ test('strict content MCP uses one encoded selector and forwards revision options
     assert.match(r.headers.authorization,/^Ghost /);
     assert.equal(r.headers['accept-version'],'v5.0');
   }
-  await assert.rejects(m.mcpClient.callTool({name:'posts_edit',arguments:{id:'one',updated_at:'2026-10-21T00:00:00Z',save_revison:true}}),/Invalid arguments/);
+  await assertToolError(m.mcpClient.callTool({name:'posts_edit',arguments:{id:'one',updated_at:'2026-10-21T00:00:00Z',save_revison:true}}),/Invalid arguments/);
   const ambiguous=await m.mcpClient.callTool({name:'tags_read',arguments:{id:'one',slug:'two'}});
   assert.equal(ambiguous.isError,true);
   assert.equal(f.requests.length,6);
@@ -448,7 +449,7 @@ test('SDK-backed page tools confine actual HTTP routes and reject traversal befo
   for (const [name, args] of [
     ['pages_delete', {id: '../posts/victim'}], ['pages_edit', {id: '../posts/victim', updated_at: '2026-10-20T00:00:00.000Z'}],
     ['pages_read', {slug: '%2e%2e/posts/victim'}],
-  ]) await assert.rejects(mcp.mcpClient.callTool({name, arguments: args}), /Invalid arguments/);
+  ]) await assertToolError(mcp.mcpClient.callTool({name, arguments: args}), /Invalid arguments/);
   assert.equal(f.requests.length, 0);
   await mcp.mcpClient.callTool({name: 'pages_read', arguments: {slug: 'über uns'}});
   await mcp.mcpClient.callTool({name: 'pages_delete', arguments: {id: 'abc123'}});

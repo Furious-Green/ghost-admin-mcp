@@ -20,7 +20,7 @@ alignment, not a comprehensive protocol certification or a protocol revision.
 | --- | --- |
 | Malformed tools/call request (missing/wrong name, nonobject arguments) | JSON-RPC InvalidParams -32602; SDK request-envelope parser |
 | Unknown/removed/disabled tool | InvalidParams -32602, bounded fixed guidance |
-| Unsupported task augmentation | InvalidParams -32602 before callback; no task capability added |
+| Unsupported task augmentation | Existing SDK protocol rejection before callback; no task capability added (see limitation below) |
 | Valid request, known tool, schema/selector/unknown-field failure | CallToolResult isError:true; existing diagnostic/sanitizer policies |
 | Known-tool input-budget/non-JSON-tree rejection | isError:true with bounded fixed guidance before Zod/callback/HTTP |
 | Ghost/API/permission/business/callback failure | isError:true; existing sanitized adapter diagnostics, no retries |
@@ -53,6 +53,17 @@ Version0.2.0 starts the next pre-1.0 minor because clients previously relying on
 exceptions for invalid tool arguments must now inspect isError before parsing
 data. Read version from manifest as already implemented. No dual behavior switch,
 no tagged/published release, no implication of upstream version continuity.
+
+### Experimental task limitation (source-backed scope correction)
+Raw stdio tests found the SDK rejects task augmentation for an unadvertised
+capability with -32603 before our dispatcher. Preserve this fail-closed boundary
+and do not claim experimental-task conformance: the tasks specification's receiver
+requirements describe ignoring metadata without support, while client negotiation
+forbids sending task-augmented tool calls without the capability. Changing this
+to execute an unexpected task-marked mutation would alter an existing safety
+boundary and needs separate explicit design. This issue aligns ordinary tool
+error classification, not all experimental task behavior. The local dispatcher
+retains its secondary unsupported-task check, but that is not the wire path.
 
 ## Tests, migration and gate
 Update known-tool validation assertions to inspect resolved isError text without
