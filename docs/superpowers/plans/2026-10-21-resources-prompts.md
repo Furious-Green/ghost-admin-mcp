@@ -53,7 +53,7 @@ HTML source builder uses UTF16-safe prefix and per-field counts; no new model AP
 
 ### Task 3: HTTP/discovery/docs/review/PR
 **Files:** native-http/stdio/resources-prompts tests, README and this plan outcomes.
-- [ ] Actual loopback resource POST? Never: only GET entity/site and prompt
+- [ ] Actual loopback reads use only GET entity/site and prompt
   GETpost with formatshtml; encoded routes/privateJWT/public noJWT, error once.
 - [ ] Stdio resource/prompt discovery same names with JSON descriptions; invalid
   resource IDs/promptargs no network or diagnostic stderr. No automatic listings.
@@ -69,3 +69,22 @@ HTML source builder uses UTF16-safe prefix and per-field counts; no new model AP
 Spec resource/URI/error contracts mapTask1, prompt/strictsourceTask2,
 HTTP/permissions/discovery/docsTask3. All focus rows have tests. No parallel
 implementation or unrelated tool/transport changes; helper extraction stays opt-in.
+
+## Execution evidence
+
+- Task1 four resource tests RED placeholder/no dispatch/missing helper -> GREEN392
+  full tests. Seven real reads, JSON metadata, encoded case/Unicode, strict URI/
+  injected-variable validation, malformed/serializer/error paths without logging.
+- Task2 four prompt tests RED preview/loose args/no JSON -> GREEN396 full tests.
+  Explicit HTML retrieval, beyond300/cap/surrogate boundaries and counts, missing
+  HTML errors, empty HTML valid, untrusted quoted source and strict bounded args.
+  Existing tool schema-error sanitization tests remain green after extraction.
+- Task3 loopback verifies seven routes, prompt formatshtml, private JWT/public
+  site noJWT, safe one-request SDK403/native404 errors. Same-resource concurrent
+  MCP reads preserve invocation metadata. Stdio names/MIME/args/invalid-input
+  no-network checks and import contracts updated; README no stale placeholder claim.
+- Clean npm ci/typecheck/full suite **398/398**, diff whitespace check pass.
+  No new dependencies;9 inherited advisories (3 moderate,4 high,2 critical).
+- No live Ghost reads or mutations, model/Langfuse calls, telemetry, private
+  changes, merge/deploy/publication. Existing transport policies unchanged.
+- Pending one independent whole-branch review, final verification and approved PR.

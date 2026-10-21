@@ -105,3 +105,16 @@ test('summarize prompt strict arguments and failures protect injected reads and 
     assert.match(error.message,/Ghost resource read failed/);assert.ok(!error.message.includes('PRIVATE_POST_MARKER'));return true;
   });assert.equal(called,1);
 });
+
+test('concurrent same-resource reads keep invocation metadata isolated', {timeout:5000},async t=>{
+  const jobs=[];let readyResolve;const ready=new Promise(resolve=>{readyResolve=resolve});
+  const {config}=require('./helpers/fixtures.cjs');
+  const client=require('../build/client/sdkAdapter.js').createGhostClient(config,{makeRequest:request=>new Promise(resolve=>{
+    jobs.push({request,resolve});if(jobs.length===2)readyResolve();
+  })});
+  const m=await openMcpHarness(client);t.after(m.close);
+  const one=m.mcpClient.readResource({uri:'post://one'}),two=m.mcpClient.readResource({uri:'post://two'});await ready;
+  jobs[1].resolve({posts:[{id:'two',html:'Two'}],meta:{owner:'two'}});jobs[0].resolve({posts:[{id:'one',html:'One'}],meta:{owner:'one'}});
+  assert.deepEqual(JSON.parse((await one).contents[0].text),{data:{id:'one',html:'One'},meta:{owner:'one'}});
+  assert.deepEqual(JSON.parse((await two).contents[0].text),{data:{id:'two',html:'Two'},meta:{owner:'two'}});
+});

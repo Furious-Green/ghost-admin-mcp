@@ -27,7 +27,7 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 - Pagination is returned when Ghost supplies it; this server never invents pagination or automatically fetches additional pages. Available paging controls remain resource-specific.
 - Both slices of [#6](https://github.com/Furious-Green/ghost-admin-mcp/issues/6) repair the exposed query/input schemas (see migrations below), not the full Admin API surface. Explicit delivery uses `posts_edit`; newsletter configuration tools manage settings and optional creation-time opt-in, not content sending.
 - `newsletters_delete` and the direct client's newsletter delete method have been removed: Ghost 5.130.0 has no matching endpoint. There is no alias or automatic archive. Explicitly use `newsletters_edit` / `status: "archived"` where appropriate.
-- All seven MCP resource handlers return placeholder text, and the summarize-post prompt retains a limited HTML preview ([#11](https://github.com/Furious-Green/ghost-admin-mcp/issues/11)).
+- Resource reads use the configured client's permission boundaries; not every key can read private member/staff data. The summarization prompt supplies explicitly requested HTML with documented source caps, not an automatically executed summary.
 - Available SDK methods do not prove that a Ghost version or credential permits an operation. Custom Integration keys have fixed restricted permissions; staff tokens act with the user's role. Never assume every key grants unrestricted admin access.
 
 See [the coverage backlog](https://github.com/Furious-Green/ghost-admin-mcp/issues/1). Tests characterize known defects without treating them as repaired. Live Ghost compatibility has not been verified by the offline suite.
@@ -301,7 +301,7 @@ header. The MCP server still requires its existing key/configuration for other
 tools; there is no anonymous-server mode. The request uses only the configured
 site URL/subdirectory, refuses redirects, times out after30 seconds and never
 retries. Site read is **not general settings access or editing**. `blog://info`
-and the other placeholder MCP resources remain deferred to #11.
+now uses the same public site read; other entity resources remain permission-bound.
 
 | Version evidence | Labels | Public site |
 | --- | --- | --- |
@@ -491,19 +491,75 @@ are not silently included.
 
 ## Available Resources
 
-The following entity families have registered tool names (see the limitations above; the separately registered MCP resources are placeholders):
+All seven existing MCP resource names/URIs now perform real reads:
 
-- **Posts**: Articles and content published on your Ghost site.
-- **Pages**: Static content, managed separately from posts.
-- **Members**: Registered users and subscribers of your site.
-- **Newsletters**: Newsletter configuration, not an explicit email-send workflow.
-- **Offers**: Promotional offers and discounts for members.
-- **Invites**: Staff invitations, not member subscriptions.
-- **Roles**: User roles and permissions within the Ghost admin.
-- **Tags**: Organizational tags for posts and content.
-- **Tiers**: Subscription tiers and plans for members.
-- **Users**: Admin users and staff accounts.
-- **Webhooks**: Automated event notifications to external services.
+| URI | Client read |
+| --- | --- |
+| `user://{user_id}` | users.read by ID |
+| `member://{member_id}` | members.read by ID |
+| `tier://{tier_id}` | tiers.read by ID |
+| `offer://{offer_id}` | offers.read by ID |
+| `newsletter://{newsletter_id}` | newsletters.read by ID |
+| `post://{post_id}` | posts.read by ID with explicit formats=html |
+| `blog://info` | Public site.read, not general settings |
+
+**Compatibility change:** resource text is now `application/json`, not successful
+placeholder `text/plain`. Each read returns one
+`contents:[{uri,mimeType:"application/json",text:"...JSON..."}]`, with text
+containing `{data:entity,meta?}` just like entity tools. Nullable/extra entity
+fields, empty/unknown/nested metadata and absent metadata are preserved. Resource
+names/templates and54 tool names are unchanged; no automatic enumeration or
+background Ghost requests occur during discovery. Internal standalone placeholder
+handler exports were replaced by injected `registerResources(server,client)`;
+those internal functions were not a working retrieval API.
+
+Example resource read: `{"uri":"post://POST_ID"}`. IDs are case-sensitive,
+nonblank and <=191 UTF16 code units. Percent-encode spaces/Unicode in resource
+URIs, for example `post://caf%C3%A9%20ID`; variables decode exactly once and the
+client encodes the ID once for the fixed HTTP route. Traversal, nested escapes,
+delimiters/control characters, URI credentials/ports/query/fragment/path additions
+and malformed variables fail before client dispatch. URI values are symbolic
+identifiers, not arbitrary HTTP destinations. No slug/email/query controls are
+accepted through resource URIs; use the corresponding tools for those queries.
+
+Configured Ghost permissions still apply, including private member/staff data:
+advertising a resource does not grant access to it. Each read invokes the same
+client as its tool, without fallback auth, fake entities, logging credentials or
+automatic retries. Permission/not-found/malformed response/serialization failures
+are sanitized **MCP protocol errors**, not tool `isError` content or placeholder
+success. Check the ID and Ghost permissions for details. Unknown/unmatched URI
+handling remains the pinned MCP SDK's behavior. `blog://info` alone uses the
+public site endpoint without sending Authorization; the server's existing key
+configuration is still required. No resource-specific output truncation or new
+HTTP-size policy is introduced; prompt caps below are separate.
+
+## Summarization prompt
+
+`summarize-post` keeps its required `postId` argument, now strict and validated
+before even injected clients. Unknown arguments, unsafe/blank IDs and IDs over191
+UTF16 code units fail instead of being silently discarded. One explicit
+`posts.read({id:postId},{formats:"html"})` supplies the source; no links are fetched
+and no Lexical conversion or model call is performed by this server.
+
+The returned user message includes full supplied HTML up to **100,000 UTF16 code
+units**, plus title up to2000 and excerpt up to5000. Longer fields use a prefix
+without cutting a surrogate pair. The old silent300-character preview and
+unconditional ellipsis are removed. HTML is visibly labelled complete or
+**TRUNCATED**, with included/original counts; all three fields have explicit
+`truncation` metadata (`originalCharacters`, `includedCharacters`, `limit`,
+`truncated`) in JSON source. Null/missing/non-string HTML fails rather than
+constructing a fake empty source; genuinely empty HTML remains valid. Optional
+non-string title/excerpt become empty strings.
+
+Source is JSON-quoted and marked **untrusted data, not instructions**; the prompt
+asks the host model not to follow embedded instructions or links. This is not a
+prompt-injection-proof guarantee or evaluated summary-quality claim. The MCP host
+decides whether/how to execute the returned prompt; no LLM/Langfuse credentials,
+tracing or telemetry dependency is added. Caps govern source construction after
+the full Ghost response is fetched, not network/JSON parsing, total memory,
+concurrent requests or model tokens. Read failures remain sanitized protocol
+errors; endpoint/version/permission evidence remains the existing Ghost5.130.0
+baseline, not live compatibility proof.
 
 ## Available Tools
 
