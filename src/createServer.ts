@@ -1,9 +1,6 @@
-import {McpServer, ResourceTemplate} from '@modelcontextprotocol/sdk/server/mcp.js';
+import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js';
 import type {GhostClient} from './client/types';
-import {
-    handleUserResource, handleMemberResource, handleTierResource, handleOfferResource,
-    handleNewsletterResource, handlePostResource, handleBlogInfoResource,
-} from './resources';
+import {registerResources} from './resources';
 import {registerPostTools} from './tools/posts';
 import {registerPageTools} from './tools/pages';
 import {registerMemberTools} from './tools/members';
@@ -26,14 +23,7 @@ export function createServer(client: GhostClient): McpServer {
         capabilities: {resources: {}, tools: {}, prompts: {}, logging: {}},
     });
 
-    // These handlers retain their existing placeholders until issue #11.
-    server.resource('user', new ResourceTemplate('user://{user_id}', {list: undefined}), handleUserResource);
-    server.resource('member', new ResourceTemplate('member://{member_id}', {list: undefined}), handleMemberResource);
-    server.resource('tier', new ResourceTemplate('tier://{tier_id}', {list: undefined}), handleTierResource);
-    server.resource('offer', new ResourceTemplate('offer://{offer_id}', {list: undefined}), handleOfferResource);
-    server.resource('newsletter', new ResourceTemplate('newsletter://{newsletter_id}', {list: undefined}), handleNewsletterResource);
-    server.resource('post', new ResourceTemplate('post://{post_id}', {list: undefined}), handlePostResource);
-    server.resource('blog-info', 'blog://info', handleBlogInfoResource);
+    registerResources(server, client);
 
     registerPostTools(server, client);
     registerPageTools(server, client);

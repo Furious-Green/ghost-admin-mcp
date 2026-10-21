@@ -98,6 +98,15 @@ test('stdio initializes and discovers all tools without any Ghost HTTP calls', {
   assert.equal(names.includes('newsletters_delete'),false);
   await assert.rejects(cli.request('tools/call',{name:'newsletters_delete',arguments:{id:'one'}}),/not found|Unknown tool/i);
   assert.equal(cli.requests.length, 0);
+  const templates=await cli.request('resources/templates/list',{});
+  assert.deepEqual(templates.resourceTemplates.map(r=>r.uriTemplate).sort(),['member://{member_id}','newsletter://{newsletter_id}','offer://{offer_id}','post://{post_id}','tier://{tier_id}','user://{user_id}']);
+  assert.ok(templates.resourceTemplates.every(r=>r.mimeType==='application/json'));
+  const resources=await cli.request('resources/list',{});assert.equal(resources.resources[0].uri,'blog://info');assert.equal(resources.resources[0].mimeType,'application/json');
+  const prompts=await cli.request('prompts/list',{});assert.equal(prompts.prompts[0].name,'summarize-post');assert.match(prompts.prompts[0].description,/100000/);
+  assert.deepEqual(prompts.prompts[0].arguments.map(a=>[a.name,a.required]),[['postId',true]]);
+  await assert.rejects(cli.request('resources/read',{uri:'post://%2e%2e'}),/Invalid Ghost resource/);
+  await assert.rejects(cli.request('prompts/get',{name:'summarize-post',arguments:{postId:'one',unknown:'bad'}}),/Invalid summarize-post/);
+  assert.equal(cli.requests.length,0);
   assert.ok(cli.messages.length >= 2);
   assert.ok(cli.messages.every(message => message.jsonrpc === '2.0'));
   assert.ok(!cli.stderr().includes(config.key));

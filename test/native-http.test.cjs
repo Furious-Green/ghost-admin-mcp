@@ -28,6 +28,34 @@ function client(url, executor) {
   return require('../build/client/sdkAdapter.js').createGhostClient({...config, url}, executor ? {makeRequest: executor} : {});
 }
 
+test('real resource and prompt reads use fixed authenticated routes and public site without credentials',async t=>{
+  const f=await fixture(t,(req,res)=>{
+    res.setHeader('Content-Type','application/json');
+    if(req.url.includes('/denied/')){res.statusCode=req.url.includes('/users/')?403:404;return res.end(JSON.stringify({errors:[{message:config.key+'PRIVATE_RESOURCE_PATH',type:'NoPermissionError'}]}))}
+    const family=req.url.split('/')[5],entity={id:'actual',title:'Title',excerpt:'Excerpt',html:'Complete '.repeat(100),url:'https://frontend.invalid'};
+    res.end(JSON.stringify({[family]:family==='site'?entity:[entity],meta:{unknown:{zero:0}}}));
+  });
+  const m=await require('./helpers/mcpHarness.cjs').openMcpHarness(client(f.url+'/blog'));t.after(m.close);
+  for(const scheme of ['user','member','tier','offer','newsletter','post']){
+    const output=await m.mcpClient.readResource({uri:`${scheme}://caf%C3%A9%20ID`});assert.equal(output.contents[0].mimeType,'application/json');
+    assert.equal(JSON.parse(output.contents[0].text).meta.unknown.zero,0);
+  }
+  const site=await m.mcpClient.readResource({uri:'blog://info'});assert.equal(JSON.parse(site.contents[0].text).data.url,'https://frontend.invalid');
+  const prompt=await m.mcpClient.getPrompt({name:'summarize-post',arguments:{postId:'one'}});assert.ok(prompt.messages[0].content.text.includes('Complete '.repeat(100)));
+  assert.deepEqual(f.requests.map(r=>r.url),[
+    '/blog/ghost/api/admin/users/caf%C3%A9%20ID/','/blog/ghost/api/admin/members/caf%C3%A9%20ID/',
+    '/blog/ghost/api/admin/tiers/caf%C3%A9%20ID/','/blog/ghost/api/admin/offers/caf%C3%A9%20ID/',
+    '/blog/ghost/api/admin/newsletters/caf%C3%A9%20ID/','/blog/ghost/api/admin/posts/caf%C3%A9%20ID/?formats=html',
+    '/blog/ghost/api/admin/site/','/blog/ghost/api/admin/posts/one/?formats=html',
+  ]);
+  for(const r of f.requests){assert.equal(r.method,'GET');if(r.url.includes('/site/'))assert.equal(r.headers.authorization,undefined);else assert.match(r.headers.authorization,/^Ghost /)}
+  for(const uri of ['user://denied','tier://denied']){
+    const before=f.requests.length;await assert.rejects(m.mcpClient.readResource({uri}),error=>{
+      assert.match(error.message,/Ghost resource read failed/);assert.ok(!error.message.includes(config.key));assert.ok(!error.message.includes('PRIVATE_RESOURCE_PATH'));return true;
+    });assert.equal(f.requests.length,before+1);
+  }
+});
+
 test('labels and public site preserve configured prefix, literal HTTP shapes and authentication boundaries',async t=>{
   const site={title:'Publication',description:'News',logo:'/relative.png',url:'https://front.example.invalid/',version:'5.130',extra:null};
   const replies=[{labels:[{id:'one'}],meta:{pagination:{next:null}}},{labels:[{id:'one',name:'VIP'}]},
