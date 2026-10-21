@@ -94,3 +94,13 @@ test('site empty-input validation protects both direct and injected clients',asy
   for(const input of [undefined,null,[],42])await assert.rejects(r.client.site.read(input));
   assert.equal(called,0);assert.equal(r.requests.length,0);
 });
+
+test('member label and newsletter assignment bodies stay compatible with standalone label tools',async t=>{
+  const r=await setup(t);
+  const relationships={labels:[{name:'VIP',slug:'vip'},{name:'Trial',slug:null}],newsletters:[{id:'newsletter1'}]};
+  await r.call('members_edit',{id:'member1',...relationships});
+  assert.deepEqual(r.requests[0].data,{members:[relationships]});
+  await r.call('members_edit',{id:'member1',labels:[],newsletters:[]});
+  assert.deepEqual(r.requests[1].data,{members:[{labels:[],newsletters:[]}]});
+  assert.equal(r.requests.length,2);
+});

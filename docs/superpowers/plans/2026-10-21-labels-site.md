@@ -81,3 +81,20 @@ Spec contracts map to Tasks1/2, source/version/relationship/discovery/HTTP toTas
 All five focus classes assigned concrete tests; source evidence is baseline-only,
 not live proof. No permission escalation or dependencies needed. Existing native
 request abstraction receives two narrowly scoped route capabilities, not a proxy.
+
+## Execution evidence
+
+- Task1 label MCP/direct tests RED (missing label tool/client), then GREEN349
+  full tests; strict selectors/options, query/body split and delete confirmations.
+- Task2 site tests RED (missing site tool), then GREEN352 full tests. Public
+  route omits JWT; strict singleton/meta validation and immutable caller inputs.
+- Task3 adds HTTP/stdio/member regression coverage for those implemented paths.
+  Initial HTTP assertion incorrectly expected Axios to escape a CSV comma;
+  inspected literal request and retained existing safe native serialization.
+- Clean npm ci/typecheck/full suite **355/355** and diff check pass. Dependencies
+  unchanged; nine inherited advisories (3 moderate,4 high,2 critical).
+- README covers all six tools, source-verified5.130.0 version matrix, public
+  site vs configured-server auth, member relationships and deletion effects.
+  Removed an inherited stale newsletter-delete inventory entry to match the
+  actual51 names; no corresponding runtime change.
+- Pending: one independent whole-branch review, final verification, push/PR/CI.

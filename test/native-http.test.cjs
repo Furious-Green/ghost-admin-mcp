@@ -28,6 +28,51 @@ function client(url, executor) {
   return require('../build/client/sdkAdapter.js').createGhostClient({...config, url}, executor ? {makeRequest: executor} : {});
 }
 
+test('labels and public site preserve configured prefix, literal HTTP shapes and authentication boundaries',async t=>{
+  const site={title:'Publication',description:'News',logo:'/relative.png',url:'https://front.example.invalid/',version:'5.130',extra:null};
+  const replies=[{labels:[{id:'one'}],meta:{pagination:{next:null}}},{labels:[{id:'one',name:'VIP'}]},
+    {labels:[{id:'one',name:'Changed'}]},null,{site,meta:{unknown:{zero:0}}},
+    ...[403,404,409].map(status=>({errors:[{message:`secret ${config.key}`,type:'ValidationError'}]}))];
+  const f=await fixture(t,(req,res)=>{
+    const n=f.requests.length-1;res.statusCode=n===3?204:n<5?200:[403,404,409][n-5]??500;
+    res.setHeader('Content-Type','application/json').end(n===3?'':JSON.stringify(replies[n]));
+  });
+  const m=await require('./helpers/mcpHarness.cjs').openMcpHarness(client(f.url+'/blog'));t.after(m.close);
+  const call=(name,args)=>m.mcpClient.callTool({name,arguments:args});
+  assert.deepEqual(JSON.parse((await call('labels_browse',{page:2,limit:1,include:'count.members'})).content[0].text),{data:[{id:'one'}],meta:{pagination:{next:null}}});
+  await call('labels_read',{slug:'café vip',fields:'id,name',include:'count.members'});
+  await call('labels_edit',{id:'one',name:'Changed',slug:'changed',include:'count.members'});
+  assert.equal((await call('labels_delete',{id:'one'})).content[0].text,'Label with id one deleted.');
+  assert.deepEqual(JSON.parse((await call('site_read',{})).content[0].text),{data:site,meta:{unknown:{zero:0}}});
+  for(const status of [403,404,409]){
+    const before=f.requests.length;const output=await call('labels_edit',{id:'one',name:'Changed'});
+    assert.equal(output.isError,true);assert.match(output.content[0].text,new RegExp(`HTTP ${status}`));
+    assert.ok(!JSON.stringify(output).includes(config.key));assert.equal(f.requests.length,before+1);
+  }
+  assert.deepEqual(f.requests.slice(0,5).map(r=>[r.method,r.url]),[
+    ['GET','/blog/ghost/api/admin/labels/?page=2&limit=1&include=count.members'],
+    ['GET','/blog/ghost/api/admin/labels/slug/caf%C3%A9%20vip/?fields=id,name&include=count.members'],
+    ['PUT','/blog/ghost/api/admin/labels/one/?include=count.members'],
+    ['DELETE','/blog/ghost/api/admin/labels/one/'],['GET','/blog/ghost/api/admin/site/'],
+  ]);
+  assert.deepEqual(JSON.parse(f.requests[2].body),{labels:[{name:'Changed',slug:'changed'}]});
+  assert.equal(f.requests[3].body,'');assert.equal(f.requests[4].body,'');
+  for(const r of f.requests){
+    assert.equal(r.headers['accept-version'],'v5.0');
+    if(r.url.endsWith('/site/'))assert.equal(r.headers.authorization,undefined);
+    else assert.match(r.headers.authorization,/^Ghost /);
+  }
+});
+
+test('public site refuses redirects without following external response URLs or sending credentials',async t=>{
+  let redirected=0;
+  const destination=await fixture(t,(req,res)=>{redirected++;res.end('{}')});
+  const f=await fixture(t,(req,res)=>res.writeHead(302,{Location:destination.url+'/unexpected'}).end());
+  await assert.rejects(client(f.url).site.read({}),/HTTP 302/);
+  assert.equal(f.requests.length,1);assert.equal(redirected,0);
+  assert.equal(f.requests[0].headers.authorization,undefined);
+});
+
 test('explicit delivery and opt-in use literal HTTP query/body contracts and never retry errors',async t=>{
   const replies=[
     {posts:[{id:'one',status:'sent',email:{status:'failed',error:'Unavailable'}}]},
