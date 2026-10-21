@@ -19,7 +19,8 @@
         "start": "node build/server.js",
         "prepare": "npm run build",
         "test": "npm run build && node --test test/*.test.cjs",
-        "typecheck": "tsc --noEmit && tsc -p tsconfig.test-types.json"
+        "typecheck": "tsc --noEmit && tsc -p tsconfig.test-types.json",
+        "verify:artifacts": "node scripts/verify-artifacts.cjs"
     },
     "keywords": [],
     "author": "Fanyang Meng (https://mfydev.link)",

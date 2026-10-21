@@ -5,7 +5,7 @@ const readline = require('node:readline');
 const path = require('node:path');
 const {config} = require('./fixtures.cjs');
 
-exports.startCli = async function startCli(t) {
+exports.startCli = async function startCli(t, {cwd = path.resolve(__dirname, '../..')} = {}) {
   const requests = [];
   const httpServer = http.createServer((request, response) => {
     requests.push({url: request.url, method: request.method});
@@ -19,7 +19,7 @@ exports.startCli = async function startCli(t) {
   await once(httpServer, 'listening');
 
   const child = spawn(process.execPath, ['--require', path.join(__dirname, 'blockNetworkPreload.cjs'), 'build/server.js'], {
-    cwd: path.resolve(__dirname, '../..'),
+    cwd,
     env: {PATH: process.env.PATH, GHOST_API_URL: `http://127.0.0.1:${httpServer.address().port}`, GHOST_ADMIN_API_KEY: config.key, GHOST_API_VERSION: 'v5.0'},
     stdio: ['pipe', 'pipe', 'pipe'],
   });
