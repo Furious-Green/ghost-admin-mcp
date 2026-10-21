@@ -1,5 +1,6 @@
 import {z, type ZodRawShape} from 'zod';
 import {McpServer, type ToolCallback} from '@modelcontextprotocol/sdk/server/mcp.js';
+import {trackRegisteredTool} from './toolDispatch';
 
 // The pinned SDK wraps raw shapes in a stripping object by default. Its public
 // RegisteredTool schema is writable, so tighten only these repaired tools.
@@ -20,10 +21,10 @@ export function registerStrictTool<Args extends ZodRawShape>(
     validationError?: string,
 ) {
     const registered = server.tool(name, description, shape, callback);
-    const schema = z.object(shape).strict();
-    if (validationError !== undefined) {
-        boundedValidationSchema(schema, validationError);
-    }
-    registered.inputSchema = schema;
-    return registered;
+    const makeSchema = (params: ZodRawShape) => {
+        const schema = z.object(params).strict();
+        return validationError === undefined ? schema : boundedValidationSchema(schema, validationError);
+    };
+    registered.inputSchema = makeSchema(shape);
+    return trackRegisteredTool(server, name, registered, makeSchema);
 }

@@ -11,7 +11,7 @@ export function createSdkRequestExecutor(): RequestExecutor {
             maxBodyLength: Infinity,
             paramsSerializer(parameters) {
                 return Object.keys(parameters).map(key =>
-                    `${key}=${encodeURIComponent([].concat(parameters[key]).join(','))}`).join('&');
+                    `${key}=${encodeURIComponent(([] as unknown[]).concat(parameters[key]).join(','))}`).join('&');
             },
         });
         return response.data;

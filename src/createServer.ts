@@ -17,6 +17,7 @@ import {registerSiteTools} from './tools/site';
 import {registerImageTools} from './tools/images';
 import {registerThemeTools} from './tools/themes';
 import {registerPrompts} from './prompts';
+import {installToolDispatcher} from './tools/toolDispatch';
 
 export function createServer(client: GhostClient): McpServer {
     const server = new McpServer({name: 'ghost-mcp-ts', version: '1.0.0'}, {
@@ -41,5 +42,6 @@ export function createServer(client: GhostClient): McpServer {
     registerImageTools(server, client);
     registerThemeTools(server, client);
     registerPrompts(server, client);
+    installToolDispatcher(server);
     return server;
 }
