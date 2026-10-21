@@ -14,7 +14,7 @@ const browse = {...pagingParams, filter: nonblank.optional(), order: nonblank.op
 export const accountQueryShapes = {
     members: {browse: {...browse, search: nonblank.optional(), ...memberInclude}, read: memberInclude, add: {}, edit: {}, delete: {}},
     users: {browse: {...browse, ...userInclude}, read: {fields: csv().optional(), filter: nonblank.optional(), ...userInclude}, edit: userInclude, delete: {}},
-    newsletters: {browse: {...browse, ...newsletterInclude}, read: {fields: csv().optional(), ...newsletterInclude}, add: newsletterInclude, edit: newsletterInclude, delete: {}},
+    newsletters: {browse: {...browse, ...newsletterInclude}, read: {fields: csv().optional(), ...newsletterInclude}, add: {...newsletterInclude, opt_in_existing: z.boolean().optional()}, edit: newsletterInclude},
     webhooks: {add: {}, edit: {}, delete: {}},
 };
 const memberFields = {
@@ -23,6 +23,9 @@ const memberFields = {
     newsletters: z.array(z.object({id: selector.and(text(24))}).strict()).optional(),
 };
 const newsletterFields = {
+    slug: named.optional(), sender_name: nullableText(191),
+    sender_email: z.union([accountEmail, z.literal('')]).nullable().optional(),
+    header_image: nullableText(2000), footer_content: z.string().nullable().optional(),
     description: nullableText(2000),
     sender_reply_to: z.union([z.enum(['newsletter', 'support']), accountEmail]).optional(),
     status: z.enum(['active', 'archived']).optional(), subscribe_on_signup: z.boolean().optional(),
@@ -52,11 +55,9 @@ export const accountShapes = {
     newsletters: {
         browse: accountQueryShapes.newsletters.browse,
         read: {id: selector.optional(), slug: selector.optional(), ...accountQueryShapes.newsletters.read},
-        add: {name: named, ...newsletterFields, ...newsletterInclude},
-        edit: {id: selector, name: named.optional(), ...newsletterFields, sender_name: nullableText(191),
-            sender_email: z.union([accountEmail, z.literal('')]).nullable().optional(), sort_order: z.number().int().safe().nonnegative().optional(),
-            header_image: nullableText(2000), footer_content: z.string().nullable().optional(), ...newsletterInclude},
-        delete: {id: selector},
+        add: {name: named, ...newsletterFields, ...accountQueryShapes.newsletters.add},
+        edit: {id: selector, name: named.optional(), ...newsletterFields,
+            sort_order: z.number().int().safe().nonnegative().optional(), ...newsletterInclude},
     },
     webhooks: {
         add: {event, target_url: target, ...webhookFields, integration_id: selector.and(text(24)).optional()},

@@ -3,6 +3,7 @@ import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js';
 import type {GhostClient} from '../client/types';
 import {postShapes} from '../schemas/content';
 import {registerStrictTool} from './registerStrictTool';
+import {validatePostDeliveryInput} from '../schemas/postDelivery';
 
 export const {browse: browseParams, read: readParams, add: addParams, edit: editParams, delete: deleteParams} = postShapes;
 export type ToolInputs = {
@@ -22,7 +23,8 @@ export function registerPostTools(server: McpServer, client: GhostClient): void 
     const post = await client.posts.read({...(id !== undefined ? {id} : {}), ...(slug !== undefined ? {slug} : {})}, query);
     return {content: [{type: 'text', text: JSON.stringify(post, null, 2)}]};
   });
-  registerStrictTool(server, 'posts_add', 'Add a post with supported writable fields.', addParams, async args => {
+  registerStrictTool(server, 'posts_add', 'Add a post. For newsletter delivery create a draft, then read and posts_edit with explicit newsletter/publish intent. email_only or email_subject alone does not send mail.', addParams, async args => {
+    validatePostDeliveryInput(args);
     const {include, formats, ...entity} = args;
     const post = await client.posts.add(entity, {
       ...(include !== undefined ? {include} : {}), ...(formats !== undefined ? {formats} : {}),
@@ -30,9 +32,11 @@ export function registerPostTools(server: McpServer, client: GhostClient): void 
     });
     return {content: [{type: 'text', text: JSON.stringify(post, null, 2)}]};
   });
-  registerStrictTool(server, 'posts_edit', 'Edit a post using its current updated_at; optionally save a revision.', editParams, async args => {
-    const {include, formats, save_revision, ...entity} = args;
+  registerStrictTool(server, 'posts_edit', 'Edit using the current updated_at. WARNING: publishing/scheduling can send real subscriber emails, including from stored newsletter state. newsletter selects an active newsletter slug; optional email_segment limits subscribed recipients (Ghost default: all). Requires explicit published/scheduled status; scheduling requires published_at. Read first; do not blindly retry a failed/timed-out mutation. email_only alone is not delivery.', editParams, async args => {
+    validatePostDeliveryInput(args);
+    const {newsletter, email_segment, include, formats, save_revision, ...entity} = args;
     const post = await client.posts.edit(entity, {
+      ...(newsletter !== undefined ? {newsletter} : {}), ...(email_segment !== undefined ? {email_segment} : {}),
       ...(include !== undefined ? {include} : {}), ...(formats !== undefined ? {formats} : {}),
       ...(save_revision !== undefined ? {save_revision} : {}), ...(entity.html ? {source: 'html'} : {}),
     });

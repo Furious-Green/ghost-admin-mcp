@@ -14,7 +14,7 @@ test('every data tool serializes one envelope while deletes keep their confirmat
   const r = await harness(t);
   const tools = []; let cursor;
   do {const page = await r.mcpClient.listTools(cursor ? {cursor} : {}); tools.push(...page.tools); cursor = page.nextCursor;} while (cursor);
-  assert.equal(tools.length, 46);
+  assert.equal(tools.length, 45);
   assert.deepEqual(tools.map(t => t.name).sort(), [...toolNames, ...additionalToolNames].sort());
   assert.equal(r.requests.length, 0);
   for (const tool of tools) {
@@ -41,8 +41,8 @@ test('every data tool serializes one envelope while deletes keep their confirmat
     }
   }
   assert.equal(dataCount, 38);
-  assert.equal(deleteCount, 8);
-  assert.equal(r.requests.length, 46);
+  assert.equal(deleteCount, 7);
+  assert.equal(r.requests.length, 45);
 });
 
 test('MCP callers manually walk first middle final and empty pages without hidden requests', async t => {

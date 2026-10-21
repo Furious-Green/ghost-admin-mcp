@@ -40,6 +40,9 @@ test('stdio initializes and discovers all tools without any Ghost HTTP calls', {
         assert.equal(tool.inputSchema.properties.save_revision.type, 'boolean');
         assert.ok(tool.inputSchema.properties.custom_template);
         assert.equal(tool.inputSchema.properties.fields, undefined);
+        assert.ok(tool.inputSchema.properties.newsletter);
+        assert.ok(tool.inputSchema.properties.email_segment);
+        assert.match(tool.description,/real subscriber emails/i);
       }
       if (tool.name === 'tags_read') assert.ok(tool.inputSchema.properties.include);
       if (tool.name === 'members_browse') {
@@ -54,12 +57,22 @@ test('stdio initializes and discovers all tools without any Ghost HTTP calls', {
       if (tool.name === 'newsletters_edit') {
         assert.deepEqual(tool.inputSchema.properties.status.enum, ['active','archived']);
         assert.ok(tool.inputSchema.properties.include);
+        assert.equal(tool.inputSchema.properties.opt_in_existing,undefined);
+        assert.match(tool.description,/verification emails/i);
+      }
+      if (tool.name === 'newsletters_add') {
+        assert.equal(tool.inputSchema.properties.opt_in_existing.type,'boolean');
+        assert.match(tool.description,/existing members/i);
+        assert.match(tool.description,/verification emails/i);
       }
       if (tool.name === 'tiers_read') assert.equal(tool.inputSchema.properties.include, undefined);
     }
     cursor = page.nextCursor;
   } while (cursor);
   assert.deepEqual(names.sort(), [...toolNames, ...additionalToolNames].sort());
+  assert.equal(names.length,45);
+  assert.equal(names.includes('newsletters_delete'),false);
+  await assert.rejects(cli.request('tools/call',{name:'newsletters_delete',arguments:{id:'one'}}),/not found|Unknown tool/i);
   assert.equal(cli.requests.length, 0);
   assert.ok(cli.messages.length >= 2);
   assert.ok(cli.messages.every(message => message.jsonrpc === '2.0'));

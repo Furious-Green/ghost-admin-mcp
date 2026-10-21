@@ -13,7 +13,7 @@ test('account queries are per operation and selectors encode once without encodi
     ['members','read',{id:'one',fields:'id'}],['members','edit',{id:'one',include:'tiers'}],
     ['members','add',{email:'a@example.invalid',send_email:true}],['members','delete',{id:'one',cancel:true}],
     ['users','browse',{formats:'html'}],['users','read',{role:'Author'}],
-    ['newsletters','read',{id:'one',filter:'status:active'}],['newsletters','add',{name:'A',opt_in_existing:true}],
+    ['newsletters','read',{id:'one',filter:'status:active'}],['newsletters','edit',{id:'one',opt_in_existing:true}],
     ['webhooks','add',{event:'post.published',target_url:'https://example.invalid',fields:'id'}],
   ])assert.throws(()=>prepare(resource,op,input));
 });

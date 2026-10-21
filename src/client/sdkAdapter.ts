@@ -76,7 +76,9 @@ export function createGhostClient(config: GhostConfig, options: {makeRequest?: R
         pages: {...crud('pages'), copy: input => copy('pages', input)},
         members: crud('members'), users: crud('users'),
         tags: crud('tags'), ...createCommerceClients(config, options.makeRequest),
-        newsletters: crud('newsletters'), ...createStaffClients(config, options.makeRequest),
+        newsletters: {browse: method('newsletters', 'browse'), read: method('newsletters', 'read'),
+            add: method('newsletters', 'add'), edit: method('newsletters', 'edit')},
+        ...createStaffClients(config, options.makeRequest),
         webhooks: {add: method('webhooks', 'add'), edit: method('webhooks', 'edit'), delete: method('webhooks', 'delete')},
     };
 }
