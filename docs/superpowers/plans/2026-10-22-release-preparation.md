@@ -24,24 +24,24 @@ error semantics unchanged. Retain MIT/upstream author. #25 separate.
 Files: package.json/package-lock.json, test/release-policy.test.cjs,
 test/staff-mcp.test.cjs, native permission tests, src/client/staffClient.ts,
 src/tools/invites.ts, src/tools/roles.ts.
-- [ ] Add RED manifest/lock identity and operation-specific discovery/error-hint tests.
-- [ ] Update metadata and accurate hints only; keep license/author/route/auth contracts.
-- [ ] Focused tests and typecheck GREEN; commit.
+- [x] Add RED manifest/lock identity and operation-specific discovery/error-hint tests.
+- [x] Update metadata and accurate hints only; keep license/author/route/auth contracts.
+- [x] Focused tests and typecheck GREEN; commit.
 
 ### Task 2: Source/runtime artifact gate
 Files: scripts/verify-artifacts.cjs, test/helpers/stdioHarness.cjs,
 test/release-policy.test.cjs, package.json, .github/workflows/ci.yml.
 Interface: npm run verify:artifacts -> dist/<full-sha>/ with source/runtime .tar.gz,
 SHA256SUMS and verification.json; nonzero on dirty tracked tree/existing output.
-- [ ] Add RED harness alternate-cwd smoke and script/CI policy assertions.
-- [ ] Implement archive/extract/locked install/build/minimal runtime/production install,
+- [x] Add RED harness alternate-cwd smoke and executable preflight refusal tests.
+- [x] Implement archive/extract/locked install/build/minimal runtime/production install,
   discovery in each extraction with dummy credentials and rejecting HTTP fixture.
-- [ ] Commit then run actual artifact command; inspect membership/evidence/checksums.
+- [x] Commit then run actual artifact command; inspect membership/evidence/checksums.
 
 ### Task 3: Coverage, adoption and completion
 Files: README.md, docs/coverage.md, docs/artifacts.md, this plan outcome.
-- [ ] Document source-backed credential/SDK/native/live/version matrix and known gaps.
-- [ ] Document pinned source/runtime install, checksums, migrations and safe rollback.
+- [x] Document source-backed credential/SDK/native/live/version matrix and known gaps.
+- [x] Document pinned source/runtime install, checksums, migrations and safe rollback.
 - [ ] Clean ci/typecheck/full suite/artifacts/full+production audit/diff check.
 - [ ] One independent whole-branch review; material fixes test-first and final verify.
 - [ ] Audit #12/#1 acceptance, template search, push/PR with justified closing links;
@@ -52,3 +52,28 @@ Files: README.md, docs/coverage.md, docs/artifacts.md, this plan outcome.
 - [x] Baseline npm test passed (406 tests).
 - [x] Design and plan self-review: artifact version/format/toolchain and limits explicit;
   user-selected continuous native workflow retained.
+
+## Execution evidence and decisions
+
+- Task1 RED on inherited package name and blanket invite-add/role staff advice;
+  GREEN with clear unscoped fork identity/private guard and source-backed guidance.
+  Existing loopback staff-only assertion was corrected for invite creation;
+  credential redaction, one attempt, routes/auth/status handling remain tested.
+- Task2 RED for ignored extraction cwd and absent verification command. Added
+  actual executable preflight tests (dirty tree/existing output preservation),
+  rather than source-grep script tests. Existing CI policy now requires artifact
+  verification in addition to its original tests/permissions/triggers.
+- At 6b85f57, clean source and production-only runtime artifacts both initialized
+  and discovered54 tools/7 resource entries+templates/1 prompt with zero Ghost
+  requests; runtime had no TypeScript. All SHA256SUMS entries verified. Local
+  Node22.22.1/npm9.2.0/Linux recorded in output, not a universal platform claim.
+- Retain inherited0.2.0; full SHA and checksums identify artifacts, avoiding an
+  unauthorized release/version assertion. Cost: version alone cannot identify
+  this fork. No bit-identical cross-toolchain promise or bundled dependencies.
+- Final documentation covers all exposed resource families, SDK/native counts,
+  source-vs-live and integration-vs-staff distinctions, known gaps, pinned install,
+  response/strict-input/removal migrations and executable-only rollback limits.
+- Clean npm ci, typecheck, **410/410 tests**, both audits **zero**, diff check
+  passed before independent review. Artifact gate rerun for reviewed final SHA
+  after committing docs; no live actions/publication/deployment.
+- Pending one independent whole-branch review and final PR/CI acceptance audit.

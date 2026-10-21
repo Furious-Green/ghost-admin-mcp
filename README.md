@@ -1,10 +1,16 @@
-# Ghost MCP Server
+# Ghost Admin MCP — public fork
 
 [![Build & tests](https://github.com/Furious-Green/ghost-admin-mcp/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Furious-Green/ghost-admin-mcp/actions/workflows/ci.yml?query=branch%3Amain)
 [![Node.js 22](https://img.shields.io/badge/Node.js-22-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/en/about/previous-releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A Model Context Protocol (MCP) server for interacting with Ghost CMS through clients such as Claude. This public fork of [MFYDev/ghost-mcp](https://github.com/MFYDev/ghost-mcp) is repairing API coverage and reliability. It does not yet implement the full Ghost Admin API.
+
+The manifest is `ghost-admin-mcp`; `private: true` prevents accidental npm
+publication, not public repository access. MIT/upstream attribution and the
+`ghost-mcp` executable are retained. Inherited version `0.2.0` is not a new fork
+release: use a reviewed full commit SHA. See [pinned source/runtime artifacts and
+rollback](docs/artifacts.md) and the [coverage/version/credential matrix](docs/coverage.md).
 
 ![demo](./assets/ghost-mcp-demo.gif)
 
@@ -30,11 +36,13 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 - Resource reads use the configured client's permission boundaries; not every key can read private member/staff data. The summarization prompt supplies explicitly requested HTML with documented source caps, not an automatically executed summary.
 - Available SDK methods do not prove that a Ghost version or credential permits an operation. Custom Integration keys have fixed restricted permissions; staff tokens act with the user's role. Never assume every key grants unrestricted admin access.
 
-See [the coverage backlog](https://github.com/Furious-Green/ghost-admin-mcp/issues/1). Tests characterize known defects without treating them as repaired. Live Ghost compatibility has not been verified by the offline suite.
+See [the original coverage tracker](https://github.com/Furious-Green/ghost-admin-mcp/issues/1) and [current coverage and known gaps](docs/coverage.md). Live Ghost compatibility has not been verified by the offline suite.
 
 ## Usage
 
-Build a reviewed checkout of this fork with `npm ci` on Node 22. Configure your MCP client to run the resulting executable, for example in Claude Desktop's `claude_desktop_config.json`:
+Build a reviewed, full-SHA-pinned checkout with `npm ci` on Node 22, or install a
+verified runtime artifact with `npm ci --omit=dev --ignore-scripts` as described
+in the [artifact guide](docs/artifacts.md). Configure your MCP client to run the resulting executable, for example in Claude Desktop's `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
@@ -69,7 +77,15 @@ Tier-slug and offer-code read selectors are rejected, including when also supply
 
 `roles_browse` supports only optional `permissions: "assign"` (assignable roles), not legacy `filter`/`page`/`limit`/`order`. Offers and roles are unpaginated collections; no client-side pagination or role-read emulation is provided. `invites_browse` supports `filter`, `limit` (positive integer or `"all"`), `page`, `order`, and `fields`.
 
-**Staff permissions:** invites and roles are staff-management endpoints. Supply a staff access token with sufficient role permissions through the existing `GHOST_ADMIN_API_KEY` setting (same `id:secret` format), not a Custom Integration's fixed restricted permission set. Ghost enforces permissions; the client never infers credential class, auto-escalates or retries with another auth method. `invites_add` accepts `role_id` and a valid email address and **sends a real staff invitation email** when run against Ghost. Browse roles first to choose an assignable role. Delete removes an invitation, not an existing staff account.
+**Credential permissions:** Ghost 5.130.0's integration route gate permits role
+browsing and invite creation, subject to fixed integration and role permissions;
+these are not categorically staff-token-only. Invite browse/delete and user
+edit/delete require a suitable staff context. See [source evidence and the full
+matrix](docs/coverage.md). Credentials use the existing `GHOST_ADMIN_API_KEY`
+setting (`id:secret`); the client never infers credential class, auto-escalates
+or retries with another auth method. `invites_add` **sends a real staff invitation
+email**. Browse roles first to choose an assignable role. Delete removes an
+invitation, not an existing staff account. None of this is live permission proof.
 
 Executable and environment variable names, badges and MIT licensing are unchanged. **All data-returning tools now use the [response envelope below](#response-format-migration)**, including reads and copies; see both [content](#strict-content-input-migration) and [remaining-resource](#strict-remaining-resource-input-migration) input migrations. Native requests refuse redirects, time out after 30 seconds and never retry; check Ghost before manually repeating a timed-out mutation. SDK transport policy is unchanged; these native safeguards are not a claim that the SDK transport has the same policy.
 
@@ -647,11 +663,11 @@ Requests use native POST `/posts/{id}/copy/` and `/pages/{id}/copy/` with no bod
 
 ### Invites
 - **Browse Invites**: List invites.
-- **Add Invite**: Send a new staff invitation email (staff permissions required).
+- **Add Invite**: Send a real staff invitation email (integration route allowed; role/operation permissions apply).
 - **Delete Invite**: Remove an invite.
 
 ### Roles
-- **Browse Roles**: List roles, optionally with `permissions: "assign"` (staff permissions required).
+- **Browse Roles**: List roles, optionally with `permissions: "assign"` (integration route allowed; role permissions apply).
 
 ### Tags
 - **Browse Tags**: List tags.
@@ -682,7 +698,13 @@ Requests use native POST `/posts/{id}/copy/` and `/pages/{id}/copy/` with no bod
 
 ## Error Handling
 
-Failed tool calls return MCP errors. Native errors expose safe operation/status guidance, never server diagnostic bodies or request configuration; staff permission failures can suggest a sufficiently privileged staff token. Removed tools return unknown-tool errors. Startup failures are reported on stderr without dumping supplied configuration or credentials. There is no custom `GhostError` implementation.
+Schema/unknown/disabled tool failures remain MCP InvalidParams protocol errors;
+callback failures return `isError` tool results. Native errors expose safe
+operation/status and operation-specific credential guidance, never server
+diagnostic bodies or request configuration. Startup failures use stderr without
+dumping supplied credentials. [#25](https://github.com/Furious-Green/ghost-admin-mcp/issues/25)
+tracks a separate evaluation of native SDK error semantics; packaging does not
+change this contract. There is no custom `GhostError` implementation.
 
 ## Development and verification
 
@@ -692,6 +714,7 @@ Node 22 is the tested development/CI baseline. The existing default API version 
 npm ci
 npm run typecheck
 npm test
+npm run verify:artifacts # clean committed checkout; creates dist/<full-sha>/
 ```
 
 `npm test` builds the TypeScript code and runs Node's built-in test runner. It exercises the real Ghost SDK with a recording request transport, actual MCP input parsing/discovery over in-memory transports, and executable stdio discovery with dummy credentials and a rejecting loopback fixture. Response tests cover every data/delete tool, explicit paging, pending newsletter metadata, malformed replies, and out-of-order same-resource calls. Native-adapter tests independently verify JWT signatures; real Axios loopback fixtures check SDK transport parity and native JSON payloads, empty bodies, redirects, errors, and timeouts. All other suites block outbound HTTP; no real Ghost key, live content mutation, or email send is required. A pure `createServer(client)` factory accepts a typed client without reading environment configuration or connecting stdio. Tests and fixtures are outside the distributed `build/` directory.
@@ -705,9 +728,10 @@ vulnerabilities** at verification time. See [dependency evidence and reproductio
 commands](docs/dependency-security.md), including the public-API tool error
 compatibility boundary and 10000-element pre-validation guard. Future advisories
 can appear; this is not comprehensive security or live-compatibility approval.
-Package/artifact preparation and coverage/permission documentation remain part of
-the release gate. No publication/tag/deployment is performed; do not publish using
-the upstream npm identity.
+The [artifact gate](docs/artifacts.md) verifies source/runtime startup with locked
+dependencies; [coverage documentation](docs/coverage.md) separates source/contract
+evidence from unverified live behavior. No publication/tag/deployment is performed;
+do not publish using the upstream npm identity.
 
 ## Contributing
 
@@ -718,4 +742,5 @@ the upstream npm identity.
 
 ## License
 
-MIT
+MIT. Original copyright and author attribution are retained in [LICENSE](LICENSE)
+and the manifest. See [fork provenance](docs/artifacts.md).
