@@ -45,3 +45,17 @@ test('artifact gate refuses tracked changes and preserves existing outputs',t=>{
   assert.notEqual(existing.status,0);assert.match(existing.stderr,/already exists/i);
   assert.equal(fs.readFileSync(path.join(output,'keep'),'utf8'),'untouched');
 });
+
+test('artifact workspace cannot resolve a dependency available only in the checkout',t=>{
+  const {createRequire}=require('node:module');
+  const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'ghost-dependency-isolation-'));
+  t.after(()=>fs.rmSync(fixture,{recursive:true,force:true}));
+  fs.mkdirSync(path.join(fixture,'dist'));
+  const dependency=path.join(fixture,'node_modules','checkout-only-artifact-sentinel');
+  fs.mkdirSync(dependency,{recursive:true});fs.writeFileSync(path.join(dependency,'index.js'),'module.exports=true;');
+  assert.ok(createRequire(path.join(fixture,'probe.cjs')).resolve('checkout-only-artifact-sentinel'));
+  const temporary=require('../scripts/verify-artifacts.cjs').makeWorkspace(fixture);
+  t.after(()=>fs.rmSync(temporary,{recursive:true,force:true}));
+  const runtimeRequire=createRequire(path.join(temporary,'runtime-installed','build','server.js'));
+  assert.throws(()=>runtimeRequire.resolve('checkout-only-artifact-sentinel'),{code:'MODULE_NOT_FOUND'});
+});

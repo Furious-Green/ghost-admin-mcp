@@ -76,4 +76,21 @@ Files: README.md, docs/coverage.md, docs/artifacts.md, this plan outcome.
 - Clean npm ci, typecheck, **410/410 tests**, both audits **zero**, diff check
   passed before independent review. Artifact gate rerun for reviewed final SHA
   after committing docs; no live actions/publication/deployment.
-- Pending one independent whole-branch review and final PR/CI acceptance audit.
+- One independent read-only whole-branch review verified410 tests, typecheck,
+  both audits0, artifacts/checksums and no consumer-specific public information.
+  Important finding: installs under repository dist could inherit checkout
+  node_modules through Node ancestor resolution, weakening runtime-only evidence.
+- Independently reproduced TypeScript ancestor fallback. Refactored workspace
+  allocation without behavior change (focused tests green), then negative
+  checkout-only dependency regression RED (missing expected exception) -> external
+  temp installs GREEN. Runtime additionally requires all direct imports local and
+  TypeScript unresolvable; local output staging preserves same-filesystem rename.
+  The MCP SDK root has no usable entry, so resolution checks its actual public
+  server/mcp.js export. No private SDK APIs introduced.
+- Review limits accepted: live services/consumer adoption/publication/merging stay
+  unauthorized; #25 is separate; full UI parity/unsupported platforms/bit-identical
+  archives not promised. Historical RED evidence is recorded here, not certified
+  by the independent reviewer. Cost if wrong: offline evidence is insufficient
+  for a particular consumer's live operation; separate approval/verification needed.
+- No Minor findings. Pending final411-test/artifact/audit gate and PR/CI acceptance
+  audit; no second independent review.

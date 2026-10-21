@@ -51,7 +51,10 @@ It creates:
 - `SHA256SUMS`: checksums of both archives and verification evidence.
 
 Both archives are extracted separately and installed from their locks. The
-source must compile/start; the runtime must start with production dependencies
+temporary installations are outside the checkout, so repository dependencies
+cannot mask missing artifact dependencies. Runtime resolution checks also reject
+fallback for direct dependencies or an accessible development TypeScript install.
+The source must compile/start; the runtime must start with production dependencies
 only, without TypeScript. Both discover all 54 tools, seven resource entries/
 templates and one prompt without Ghost requests. CI runs this same gate but does
 not publish or upload artifacts. Reproducibility here means a committed dependency

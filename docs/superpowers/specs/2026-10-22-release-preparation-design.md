@@ -28,7 +28,9 @@ observed locally; registry access required for installs/audits, Ghost is offline
 
 Artifact command refuses tracked changes and existing destination; creates its
 own temporary directories, cleans only those, preserves user files. Source and
-runtime each initialize MCP and list all 54 tool names with dummy credentials,
+runtime installs must live outside checkout dependency ancestors, with direct
+runtime dependencies resolving locally and TypeScript not resolvable at all.
+Both initialize MCP and list all 54 tool names with dummy credentials,
 blocking external HTTP and recording zero Ghost requests. Reuse existing stdio
 harness with explicit cwd option. Runtime must start with production dependencies
 only and no compiler. CI runs this command after contract tests, without upload

@@ -1,12 +1,22 @@
 // Local-only release-preparation gate. No publication, tags, uploads or Ghost calls.
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
+const {createRequire} = require('node:module');
 const {execFileSync} = require('node:child_process');
 const {createHash} = require('node:crypto');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
 function run(command, args, cwd = root) {
   return execFileSync(command, args, {cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 180000});
+}
+function makeWorkspace(checkoutRoot) {
+  const base = fs.realpathSync(os.tmpdir());
+  const relative = path.relative(fs.realpathSync(checkoutRoot), base);
+  if (!relative || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative))) {
+    throw new Error('Temporary directory must be outside the checkout; configure TMPDIR.');
+  }
+  return fs.mkdtempSync(path.join(base, 'ghost-admin-mcp-artifacts-'));
 }
 
 async function smoke(cwd, source) {
@@ -49,13 +59,16 @@ async function main() {
   const destination = path.join(root, 'dist', commit);
   if (fs.existsSync(destination)) throw new Error(`Artifact output already exists: ${destination}`);
   fs.mkdirSync(path.join(root, 'dist'), {recursive: true});
-  const temporary = fs.mkdtempSync(path.join(root, 'dist', '.verify-'));
+  const temporary = makeWorkspace(root);
+  let output;
   try {
-    const output = path.join(temporary, 'output');
+    // Keep the final rename on the destination filesystem, while installations
+    // stay outside dependency-bearing checkout ancestors.
+    output = fs.mkdtempSync(path.join(root, 'dist', '.artifact-output-'));
     const source = path.join(temporary, 'source');
     const runtime = path.join(temporary, 'runtime');
     const installed = path.join(temporary, 'runtime-installed');
-    for (const directory of [output, source, runtime, installed]) fs.mkdirSync(directory);
+    for (const directory of [source, runtime, installed]) fs.mkdirSync(directory);
     const sourceName = `ghost-admin-mcp-${commit}-source.tar.gz`;
     const runtimeName = `ghost-admin-mcp-${commit}-runtime.tar.gz`;
     run('git', ['archive', '--format=tar.gz', `--output=${path.join(output, sourceName)}`, commit]);
@@ -72,6 +85,16 @@ async function main() {
     run('tar', ['-xzf', path.join(output, runtimeName), '-C', installed]);
     run('npm', ['ci', '--omit=dev', '--ignore-scripts'], installed);
     assert.equal(fs.existsSync(path.join(installed, 'node_modules/typescript')), false);
+    const runtimeRequire = createRequire(path.join(installed, 'build/server.js'));
+    assert.throws(() => runtimeRequire.resolve('typescript'), {code: 'MODULE_NOT_FOUND'});
+    const manifest = JSON.parse(fs.readFileSync(path.join(installed, 'package.json'), 'utf8'));
+    for (const dependency of Object.keys(manifest.dependencies)) {
+      // The MCP SDK has no usable package-root entry; resolve its actual server
+      // export, matching production imports instead of inventing a root API.
+      const entry = dependency === '@modelcontextprotocol/sdk' ? `${dependency}/server/mcp.js` : dependency;
+      const resolved = fs.realpathSync(runtimeRequire.resolve(entry));
+      assert.ok(resolved.startsWith(fs.realpathSync(path.join(installed, 'node_modules')) + path.sep), `${dependency} must resolve from the runtime install`);
+    }
     const runtimeSmoke = await smoke(installed, source);
     const evidence = {commit, node: process.version, npm: run('npm', ['--version']).trim(), platform: process.platform,
       source: sourceSmoke, runtime: runtimeSmoke, runtimeMembers: members};
@@ -83,6 +106,8 @@ async function main() {
   } finally {
     // Only the unique directory owned by this invocation is removed.
     fs.rmSync(temporary, {recursive: true, force: true});
+    if (output) fs.rmSync(output, {recursive: true, force: true});
   }
 }
-main().catch(error => {console.error(error.message); process.exitCode = 1;});
+module.exports = {makeWorkspace};
+if (require.main === module) main().catch(error => {console.error(error.message); process.exitCode = 1;});
