@@ -1,5 +1,5 @@
 import type {McpServer, RegisteredTool, ToolCallback} from '@modelcontextprotocol/sdk/server/mcp.js';
-import {CallToolRequestSchema, ErrorCode, McpError} from '@modelcontextprotocol/sdk/types.js';
+import {CallToolRequestSchema, ErrorCode, McpError, type CallToolResult} from '@modelcontextprotocol/sdk/types.js';
 import {z, type ZodRawShape} from 'zod';
 
 export const MAX_TOOL_INPUT_ELEMENTS = 10000;
@@ -81,25 +81,37 @@ export function trackRegisteredTool(server: McpServer, name: string, initial: Re
     return front;
 }
 
-// MCP1.32 catches argument/name errors into tool results. This public-API
-// dispatcher retains the fork's established protocol-error/callback-error split.
-// The SDK still owns registration/discovery and resource/prompt handling.
+function toolError(text: string): CallToolResult {
+    return {isError: true, content: [{type: 'text', text}]};
+}
+
+// The MCP2025-11-25 specification distinguishes request/routing errors from
+// known-tool validation/execution errors. SDK1.32's high-level catch conflates
+// those channels, so retain this public-API specification boundary. The SDK
+// still owns discovery and resource/prompt handling, not our error policy.
 export function installToolDispatcher(server: McpServer): void {
-    server.server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+    // Let Server's tools/call wrapper validate the full envelope as InvalidParams.
+    // Registering the full schema here makes Protocol's outer parse throw raw
+    // Zod errors first, which that layer misclassifies as InternalError.
+    const route = z.object({method: z.literal('tools/call')}).passthrough();
+    server.server.setRequestHandler(route, async (raw, extra) => {
+        const request = CallToolRequestSchema.parse(raw);
         const tool = registry(server).get(request.params.name);
         if (!tool || !tool.enabled) throw new McpError(ErrorCode.InvalidParams, 'Tool not found or disabled.');
         if (request.params.task !== undefined) throw new McpError(ErrorCode.InvalidParams, 'Task requests are not supported.');
-        if (!withinInputBudget(request.params.arguments)) throw new McpError(ErrorCode.InvalidParams, 'Tool arguments exceed the input element budget or are not a JSON tree.');
+        if (!withinInputBudget(request.params.arguments)) return toolError('Tool arguments exceed the input element budget or are not a JSON tree.');
         // All fork registrations use Zod3 through registerStrictTool. Read the
         // current public schema/handler so updates and refinements stay effective.
         const schema = tool.inputSchema as z.ZodTypeAny;
-        const parsed = await schema.safeParseAsync(request.params.arguments);
-        if (!parsed.success) throw new McpError(ErrorCode.InvalidParams, `Invalid arguments for tool ${request.params.name}: ${parsed.error.message}`);
+        let parsed: Awaited<ReturnType<z.ZodTypeAny['safeParseAsync']>>;
+        try { parsed = await schema.safeParseAsync(request.params.arguments ?? {}); }
+        catch { throw new McpError(ErrorCode.InternalError, 'Tool input validation failed unexpectedly.'); }
+        if (!parsed.success) return toolError(`Invalid arguments for tool ${request.params.name}: ${parsed.error.message}`);
         const handler = tool.handler;
-        if (typeof handler !== 'function') throw new McpError(ErrorCode.InvalidParams, 'Task handlers are not supported.');
+        if (typeof handler !== 'function') throw new McpError(ErrorCode.InternalError, 'Registered tool handler is unsupported.');
         try { return await Reflect.apply(handler, undefined, [parsed.data, extra]); }
         catch (error) {
-            return {isError: true, content: [{type: 'text', text: error instanceof Error ? error.message : String(error)}]};
+            return toolError(error instanceof Error ? error.message : String(error));
         }
     });
 }

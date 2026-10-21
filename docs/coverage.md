@@ -11,7 +11,7 @@ Ghost remains authoritative for authorization, validation and side effects.
 | Ghost source | 5.130.0 | Endpoint schemas, services/models and middleware; not a running instance |
 | Ghost Admin SDK | 1.13.13 in package-lock.json | Real SDK with recording transport and Axios loopback parity; not every available SDK release |
 | API header | default `v5.0` | Minimum-version request header, not a pinned server or every-5.x guarantee |
-| MCP SDK | 1.32.1 | In-memory and executable stdio tests, strict discovery/dispatch; preserved error contract |
+| MCP SDK | 1.32.1 | In-memory and executable stdio tests, strict discovery/dispatch; specification-based ordinary tool errors |
 | Toolchain | Node 22; local 22.22.1 / npm 9.2.0 on Linux | CI selects Node 22; each artifact records actual versions; not all platforms/toolchains |
 | Live Ghost / hosted plans / mail / billing | **Not verified** | No production requests, email delivery, Stripe or theme activation used to establish coverage |
 
@@ -87,9 +87,10 @@ No universal integration/staff credential compatibility is claimed.
   separate inherited policy. Never blindly repeat a timed-out mutation.
 - No automatic email send, recipient inference, billing action or live smoke
   mutation is performed during tests/artifact verification.
-- MCP validation/unknown/disabled tool failures retain InvalidParams protocol
-  errors; callback failures are `isError` tool results. [#25](https://github.com/Furious-Green/ghost-admin-mcp/issues/25)
-  separately evaluates native SDK semantics; this packaging work does not migrate them.
+- From fork0.2.0, known-tool validation/budget and execution failures are `isError`
+  results; unknown/disabled names and malformed envelopes remain protocol errors.
+  [Migration and retained dispatcher rationale](tool-errors.md) distinguish the
+  specification from SDK defaults, including the experimental-task limitation.
 
 See [README migrations](../README.md#migrating-from-the-original-implementation),
 [artifact adoption/rollback](artifacts.md) and [dated dependency evidence](dependency-security.md).

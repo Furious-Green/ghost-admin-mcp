@@ -1,5 +1,6 @@
 const {test,after}=require('node:test');
 const assert=require('node:assert/strict');
+const {assertToolError}=require('./helpers/toolError.cjs');
 after(require('./helpers/networkGuard.cjs').blockNetwork());
 const {makeRecordingClient}=require('./helpers/recordingClient.cjs');
 const {openMcpHarness}=require('./helpers/mcpHarness.cjs');
@@ -38,14 +39,14 @@ test('MCP delivery does not select defaults or treat email-only configuration as
 test('MCP malformed delivery controls fail before transport and cannot become body fields',async t=>{
   const r=await setup(t);
   for(const extra of [{newsletter:''},{newsletter:' '},{newsletter:'../weekly'},{newsletter:'a'.repeat(192)},{newsletter:'weekly',email_segment:''},{newsletter:'weekly',email_segment:' '},{newsletter:42},{email_segment:[]},{email_subject:'a'.repeat(301)}]){
-    await assert.rejects(r.call('posts_edit',{id:'one',updated_at:timestamp,status:'published',...extra}),/Invalid arguments/);
+    await assertToolError(r.call('posts_edit',{id:'one',updated_at:timestamp,status:'published',...extra}),/Invalid arguments/);
   }
   for(const [name,args]of [
     ['posts_add',{title:'A',newsletter:'weekly',status:'published'}],['posts_read',{id:'one',newsletter:'weekly'}],
     ['posts_browse',{email_segment:'all'}],['posts_copy',{id:'one',newsletter:'weekly'}],
     ['pages_edit',{id:'one',updated_at:timestamp,status:'published',newsletter:'weekly'}],
     ['pages_add',{title:'A',email_subject:'Subject'}],
-  ])await assert.rejects(r.call(name,args),/Invalid arguments/);
+  ])await assertToolError(r.call(name,args),/Invalid arguments/);
   for(const args of [
     {status:'published',email_segment:'status:free'}, {newsletter:'weekly'}, {newsletter:'weekly',status:'draft'},
     {newsletter:'weekly',status:'sent'}, {newsletter:'weekly',status:'scheduled'},

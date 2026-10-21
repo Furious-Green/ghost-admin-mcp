@@ -1,5 +1,6 @@
 const {test, after} = require('node:test');
 const assert = require('node:assert/strict');
+const {assertToolError}=require('./helpers/toolError.cjs');
 const {blockNetwork} = require('./helpers/networkGuard.cjs');
 after(blockNetwork());
 const {makeRecordingClient} = require('./helpers/recordingClient.cjs');
@@ -67,8 +68,8 @@ for (const [family, operations] of Object.entries(families)) {
 
 test('MCP parsing retains supported templates and validates explicit member paging', async t => {
   const {mcpClient, requests} = await harness(t);
-  await assert.rejects(mcpClient.callTool({name: 'posts_edit', arguments: {id: 'abc123', title: 'Changed'}}), /updated_at/);
-  await assert.rejects(mcpClient.callTool({name: 'members_browse', arguments: {limit: '15'}}), /limit/);
+  await assertToolError(mcpClient.callTool({name: 'posts_edit', arguments: {id: 'abc123', title: 'Changed'}}), /updated_at/);
+  await assertToolError(mcpClient.callTool({name: 'members_browse', arguments: {limit: '15'}}), /limit/);
   assert.equal(requests.length, 0);
   await mcpClient.callTool({name: 'posts_add', arguments: {title: 'Example', custom_template: 'post'}});
   assert.deepEqual(requests[0].data, {posts: [{title: 'Example', custom_template: 'post'}]});

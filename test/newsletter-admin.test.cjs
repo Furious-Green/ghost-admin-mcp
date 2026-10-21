@@ -1,5 +1,6 @@
 const {test,after}=require('node:test');
 const assert=require('node:assert/strict');
+const {assertToolError}=require('./helpers/toolError.cjs');
 after(require('./helpers/networkGuard.cjs').blockNetwork());
 const {makeRecordingClient}=require('./helpers/recordingClient.cjs');
 const {openMcpHarness}=require('./helpers/mcpHarness.cjs');
@@ -42,7 +43,7 @@ test('newsletter opt-in is creation-only strict boolean and never passed in unsu
     ['newsletters_browse',{opt_in_existing:true}],['newsletters_add',{name:'A',sort_order:0}],
     ['newsletters_add',{name:'A',slug:' '}],['newsletters_add',{name:'A',sender_email:'invalid'}],
     ['newsletters_add',{name:'A',header_image:42}],['newsletters_edit',{id:'one',footer_content:{html:'bad'}}],
-  ])await assert.rejects(r.call(name,args),/Invalid arguments/);
+  ])await assertToolError(r.call(name,args),/Invalid arguments/);
   await assert.rejects(r.client.newsletters.edit({id:'one'},{opt_in_existing:true}));
   await assert.rejects(r.client.newsletters.add({name:'A',opt_in_existing:false},{opt_in_existing:true}));
   assert.equal(r.requests.length,0);

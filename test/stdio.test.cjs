@@ -124,3 +124,25 @@ test('failed stdio initialization still closes the child, reader and loopback fi
   assert.equal(cli.httpServer.listening, false);
   assert.equal(cli.requests.length, 0);
 });
+
+test('stdio separates schema errors from malformed requests and unknown tools on the wire', {timeout:10000},async t=>{
+  const cli=await require('./helpers/stdioHarness.cjs').startCli(t);
+  await cli.request('initialize',{protocolVersion:LATEST_PROTOCOL_VERSION,capabilities:{},clientInfo:{name:'error-contract',version:'1'}});
+  cli.notify('notifications/initialized');
+  for(const params of [{arguments:{}},{name:42,arguments:{}},{name:'posts_read',arguments:null},{name:'posts_read',arguments:[]},{name:'posts_read',arguments:'wrong'},{name:'newsletters_delete',arguments:{id:'one'}}]){
+    await assert.rejects(cli.request('tools/call',params));
+    const wire=cli.messages.at(-1);assert.equal(wire.result,undefined);assert.equal(wire.error.code,-32602,JSON.stringify({params,error:wire.error}));
+  }
+  // No task capability is advertised. The SDK rejects augmentation before our
+  // dispatcher; preserve fail-closed/no-execution behavior, not task support.
+  await assert.rejects(cli.request('tools/call',{name:'posts_read',arguments:{id:'one'},task:{ttl:1000}}));
+  assert.equal(cli.messages.at(-1).error.code,-32603);
+  for(const params of [{name:'posts_edit',arguments:{id:'one'}},{name:'posts_read'},{name:'site_read',arguments:{extra:true}},{name:'images_upload',arguments:{filename:'x',mime_type:'PRIVATE_ENUM_MARKER',base64:'bad'}},{name:'site_read',arguments:Object.fromEntries(Array.from({length:10001},(_,i)=>[`key${i}`,i]))}]){
+    const result=await cli.request('tools/call',params);
+    assert.equal(result.isError,true);assert.equal(typeof result.content[0].text,'string');
+    assert.ok(!result.content[0].text.includes('PRIVATE_ENUM_MARKER'));
+    const wire=cli.messages.at(-1);assert.equal(wire.error,undefined);assert.equal(wire.result.isError,true);
+  }
+  const listed=await cli.request('tools/list',{});assert.equal(listed.tools.length,54);
+  assert.equal(cli.requests.length,0);
+});

@@ -9,7 +9,7 @@ test('fork manifest prevents accidental upstream-scope publication and matches t
   assert.equal(pkg.private,true);
   assert.equal(pkg.publishConfig,undefined);
   assert.equal(lock.name,pkg.name);assert.equal(lock.packages[''].name,pkg.name);
-  assert.equal(pkg.version,'0.1.0');
+  assert.equal(pkg.version,'0.2.0');
   assert.equal(lock.version,pkg.version);assert.equal(lock.packages[''].version,pkg.version);
   assert.equal(pkg.bin['ghost-mcp'],'build/server.js');
   assert.equal(pkg.license,'MIT');assert.match(pkg.author,/Fanyang Meng/);

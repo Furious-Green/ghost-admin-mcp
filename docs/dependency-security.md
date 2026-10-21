@@ -32,8 +32,14 @@ were used. Existing development dependencies and the Ghost SDK remain unchanged.
 
 ## Compatibility protections
 
-MCP 1.32 changes invalid tool arguments/unknown tools into isError results. This
-fork preserves its existing distinction: schema/unknown/disabled failures are
+This section records the dependency-upgrade contract retained by fork0.1.0.
+Fork0.2.0 deliberately changes known-tool validation/budget failures to `isError`
+results while keeping unknown/disabled/malformed requests as protocol errors;
+see [current error migration and explicit limitations](tool-errors.md). Dependency
+versions/audit evidence below remain historical, not a new audit result.
+
+MCP 1.32 changes invalid tool arguments/unknown tools into isError results. The
+dependency-remediation slice preserved the existing distinction: schema/unknown/disabled failures were
 MCP InvalidParams protocol errors; callback failures are isError text results.
 A per-server registry and the public setRequestHandler API implement this boundary;
 SDK private maps are not accessed. SDK registration/discovery/resources/prompts

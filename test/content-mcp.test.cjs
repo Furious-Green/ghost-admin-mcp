@@ -1,5 +1,6 @@
 const {test,after} = require('node:test');
 const assert = require('node:assert/strict');
+const {assertToolError}=require('./helpers/toolError.cjs');
 after(require('./helpers/networkGuard.cjs').blockNetwork());
 const {makeRecordingClient} = require('./helpers/recordingClient.cjs');
 const {families,config,timestamp} = require('./helpers/fixtures.cjs');
@@ -60,7 +61,7 @@ test('all 17 repaired MCP tools reject unknown keys rather than strip them',asyn
   const all={posts:{...families.posts,copy:{id:'one'}},pages:{...families.posts,copy:{id:'one'}},tags:families.tags};
   let count=0;
   for(const [resource,ops]of Object.entries(all))for(const [op,args]of Object.entries(ops)){
-    await assert.rejects(r.call(`${resource}_${op}`,{...args,unknown:'SECRET'}),/Invalid arguments/);
+    await assertToolError(r.call(`${resource}_${op}`,{...args,unknown:'SECRET'}),/Invalid arguments/);
     count++;
   }
   assert.equal(count,17);
@@ -79,7 +80,7 @@ test('MCP invalid content is rejected before any HTTP request',async t=>{
     ['posts_add',{title:'A',tags:[{id:'one',meta_title:'not a ref'}]}],
     ['posts_add',{title:'A',authors:[{}]}],['posts_edit',{id:'one',updated_at:'bad'}],
     ['posts_copy',{id:'one',formats:'html,'}],['tags_delete',{id:'../posts/one'}],
-  ]) await assert.rejects(r.call(name,args),/Invalid arguments/,`${name}: ${JSON.stringify(args)}`);
+  ]) await assertToolError(r.call(name,args),/Invalid arguments/,`${name}: ${JSON.stringify(args)}`);
   for(const name of ['posts_read','pages_read','tags_read'])for(const args of [{},{id:'one',slug:'one'}]) {
     const result=await r.call(name,args);
     assert.equal(result.isError,true);
@@ -121,8 +122,8 @@ test('MCP rejects impossible timestamp offsets before scheduling or editing HTTP
   const r=await setup(t);
   for(const resource of ['posts','pages'])for(const offset of ['+99:99','+24:00','-24:00','+01:99','-0160','+2400']) {
     const value='2026-10-21T00:00:00'+offset;
-    await assert.rejects(r.call(`${resource}_edit`,{id:'one',updated_at:value}),/Invalid arguments/);
-    await assert.rejects(r.call(`${resource}_add`,{title:'A',published_at:value}),/Invalid arguments/);
+    await assertToolError(r.call(`${resource}_edit`,{id:'one',updated_at:value}),/Invalid arguments/);
+    await assertToolError(r.call(`${resource}_add`,{title:'A',published_at:value}),/Invalid arguments/);
   }
   assert.equal(r.requests.length,0);
   const value='2026-10-21T00:00:00-01:30';

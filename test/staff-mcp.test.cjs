@@ -1,5 +1,6 @@
 const {test, after} = require('node:test');
 const assert = require('node:assert/strict');
+const {assertToolError}=require('./helpers/toolError.cjs');
 after(require('./helpers/networkGuard.cjs').blockNetwork());
 const {makeRecordingClient} = require('./helpers/recordingClient.cjs');
 async function harness(t) {
@@ -51,7 +52,7 @@ test('staff MCP rejects legacy role queries, invalid invites and traversal befor
     ...[{filter: 'name:Admin'}, {limit: 10}, {page: 1}, {order: 'name'}, {permissions: 'read'}].map(args => ['roles_browse', args]),
     ['invites_add', {role_id: 'role1', email: 'bad'}], ['invites_add', {role_id: '../x', email: 'staff@example.invalid'}],
     ['invites_browse', {unknown: true}], ['invites_delete', {id: '../posts/victim'}],
-  ]) await assert.rejects(r.mcpClient.callTool({name, arguments: args}), /Invalid arguments/);
+  ]) await assertToolError(r.mcpClient.callTool({name, arguments: args}), /Invalid arguments/);
   assert.equal(r.requests.length, 0);
 });
 test('failed staff MCP operations never report success or retry and redact server secrets', async t => {

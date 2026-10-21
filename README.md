@@ -8,8 +8,9 @@ A Model Context Protocol (MCP) server for interacting with Ghost CMS through cli
 
 The manifest is `ghost-admin-mcp`; `private: true` prevents accidental npm
 publication, not public repository access. MIT/upstream attribution and the
-`ghost-mcp` executable are retained. Version `0.1.0` starts this fork's independent
-version line; MCP reports the same package version. This does not imply a published
+`ghost-mcp` executable are retained. This fork's independent version line started
+at `0.1.0`; current version `0.2.0` introduces [specification-aligned tool errors](docs/tool-errors.md).
+MCP reports the same package version. This does not imply a published
 package or tagged release: use a reviewed full commit SHA. See [pinned source/runtime artifacts and
 rollback](docs/artifacts.md) and the [coverage/version/credential matrix](docs/coverage.md).
 
@@ -92,7 +93,7 @@ Executable and environment variable names, badges and MIT licensing are unchange
 
 ## Response format migration
 
-**Breaking output change:** browse/read/add/edit/copy return JSON text containing `{data, meta?}`. The outer MCP response is still `content: [{type: "text", text: "...JSON..."}]`, not a new protocol envelope. Tool names, executable/settings and MCP error signaling are unchanged. The separate strict-input migration below changes content validation. Delete tools keep their existing plain-text confirmations (for example, `Post with id abc123 deleted.`).
+**Breaking output change:** browse/read/add/edit/copy return JSON text containing `{data, meta?}`. The outer MCP response is still `content: [{type: "text", text: "...JSON..."}]`, not a new protocol envelope. Tool names and executable/settings are unchanged. Version `0.2.0` separately changes [tool validation error signaling](docs/tool-errors.md); the strict-input migration below changes content validation. Delete tools keep their existing plain-text confirmations (for example, `Post with id abc123 deleted.`).
 
 Previously, browse text was usually a bare array and lost pagination metadata; SDK singletons could even become bare entities when metadata was absent:
 
@@ -699,13 +700,15 @@ Requests use native POST `/posts/{id}/copy/` and `/pages/{id}/copy/` with no bod
 
 ## Error Handling
 
-Schema/unknown/disabled tool failures remain MCP InvalidParams protocol errors;
-callback failures return `isError` tool results. Native errors expose safe
-operation/status and operation-specific credential guidance, never server
+From `0.2.0`, known-tool schema and input-budget failures return `isError:true`
+tool results, as do execution failures. Unknown/disabled tools and malformed
+tool-call envelopes remain InvalidParams protocol errors. Unexpected parser/server
+handler faults use sanitized InternalError responses. Check **both channels**
+before parsing successful data; resource/prompt errors remain separate protocol
+errors. See [the migration, spec/SDK comparison and experimental-task limitation](docs/tool-errors.md).
+Native errors retain safe operation/status and credential guidance without server
 diagnostic bodies or request configuration. Startup failures use stderr without
-dumping supplied credentials. [#25](https://github.com/Furious-Green/ghost-admin-mcp/issues/25)
-tracks a separate evaluation of native SDK error semantics; packaging does not
-change this contract. There is no custom `GhostError` implementation.
+dumping supplied credentials. There is no custom `GhostError` implementation.
 
 ## Development and verification
 

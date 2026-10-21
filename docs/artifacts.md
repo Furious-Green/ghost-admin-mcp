@@ -3,8 +3,9 @@
 This public fork's manifest is `ghost-admin-mcp`, with `private: true` to prevent
 accidental npm publication. That flag does **not** make the repository private.
 The executable remains `ghost-mcp`, and existing MCP settings/tool names remain.
-Version `0.1.0` starts an independent version line for this fork, rather than
-continuing upstream's `0.2.0`. MCP initialization reports the package version.
+This fork's independent version line started at `0.1.0`, rather than continuing
+upstream's numbering. Current `0.2.0` changes ordinary tool error classification;
+see [the migration](tool-errors.md). MCP initialization reports the package version.
 This numbering reset changes neither Git history nor upstream attribution and
 does **not** create a published package or tagged release.
 Use an approved full commit SHA and checksums for exact artifact identity. No npm package, tag,
@@ -102,7 +103,9 @@ source archive or consult this commit's public documentation for evidence.
 1. Retain the previous pinned executable, lock, configuration and its known
    compatible response parser. Verify required operations and credential class
    against the [coverage matrix](coverage.md); offline tests are not live proof.
-2. Adapt parsers to `{data, meta?}` inside MCP text, retain delete text handling,
+2. Handle both protocol exceptions and `isError` tool results before decoding
+   successful data; from0.2.0 known-tool argument/budget errors resolve as error
+   results. Adapt parsers to `{data, meta?}` inside MCP text, retain delete text handling,
    reject unknown fields/selectors, and remove unsupported newsletter/offer/tier
    delete and role-read names. Read the README's full migrations, not only this
    checklist. No compatibility switch or implicit archival exists.
