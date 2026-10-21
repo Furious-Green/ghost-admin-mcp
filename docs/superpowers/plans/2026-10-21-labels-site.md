@@ -97,4 +97,18 @@ request abstraction receives two narrowly scoped route capabilities, not a proxy
   site vs configured-server auth, member relationships and deletion effects.
   Removed an inherited stale newsletter-delete inventory entry to match the
   actual51 names; no corresponding runtime change.
-- Pending: one independent whole-branch review, final verification, push/PR/CI.
+- Independent read-only whole-branch review of7a6cad2..3205717: no Critical,
+  Important or Minor findings. Reviewer independently passed355 tests/typecheck/
+  diff check and confirmed baseline source, safe selectors, query/body split,
+  public-site auth isolation, singleton metadata and unchanged relationships.
+- Review limitations stand: no live Ghost/email/Stripe/production permissions
+  or database tests; source evidence is5.130.0 only, not all5.x/other majors.
+  Nine inherited advisories remain release/adoption blockers; PR readiness is
+  not permission for private adoption, publication or deployment.
+- Acceptance audit for#8: label CRUD/options/pagination and payload/selector
+  contracts (Tasks1/3); preserved member label/newsletter inputs (Task3);
+  real public singleton title/description/logo/url/version and no settings
+  editing/authentication (Tasks2/3); explicit version evidence/limits (spec,
+  README matrix and independent source review). All acceptance criteria met.
+- Remaining integration steps: final verification, authorized push/PR closing#8,
+  both CI checks. No merge; preserve the isolated worktree for PR feedback.
