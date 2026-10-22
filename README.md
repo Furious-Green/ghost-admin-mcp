@@ -27,18 +27,26 @@ rollback](docs/artifacts.md) and the [coverage/version/credential matrix](docs/c
 - MCP error signaling and unchanged plain-text delete confirmations
 - Offline request/registration contract tests, without Ghost credentials or live mutations
 
-## Current limitations
+## Compatibility and scope
 
-54 tools are registered; registration is not proof of live API support:
+**54 tools for managing Ghost content, members, newsletters, themes and more through the Admin API.**
 
-- Tiers/offers/invites/roles use native adapters for twelve supported operations. Contracts are verified against documentation and Ghost 5.130.0 source, not a live server; permissions and version differences still apply.
-- Pagination is returned when Ghost supplies it; this server never invents pagination or automatically fetches additional pages. Available paging controls remain resource-specific.
-- Both slices of [#6](https://github.com/Furious-Green/ghost-admin-mcp/issues/6) repair the exposed query/input schemas (see migrations below), not the full Admin API surface. Explicit delivery uses `posts_edit`; newsletter configuration tools manage settings and optional creation-time opt-in, not content sending.
-- `newsletters_delete` and the direct client's newsletter delete method have been removed: Ghost 5.130.0 has no matching endpoint. There is no alias or automatic archive. Explicitly use `newsletters_edit` / `status: "archived"` where appropriate.
-- Resource reads use the configured client's permission boundaries; not every key can read private member/staff data. The summarization prompt supplies explicitly requested HTML with documented source caps, not an automatically executed summary.
-- Available SDK methods do not prove that a Ghost version or credential permits an operation. Custom Integration keys have fixed restricted permissions; staff tokens act with the user's role. Never assume every key grants unrestricted admin access.
+The server uses the official **`@tryghost/admin-api` SDK**, with native adapters for additional operations the SDK doesn't expose.
 
-See [the original coverage tracker](https://github.com/Furious-Green/ghost-admin-mcp/issues/1) and [current coverage and known gaps](docs/coverage.md). Live Ghost compatibility has not been verified by the offline suite.
+- **SDK-backed operations** use the pinned SDK's API behavior, with explicit tool schemas defining the available fields and options.
+- **Native adapters and extended schemas** follow Ghost's documented Admin API, using **Ghost 5.130.0** as the source reference.
+- **Recommended configuration:** `GHOST_API_VERSION=v5.0`. This selects the minimum API contract, not the version of Ghost you must install. Newer Ghost releases can use that contract where the relevant endpoints remain compatible.
+
+Use a **Custom Integration key** for integration workflows, or a **staff token** for operations requiring staff permissions. Ghost applies the credential's permissions to every request.
+
+See the [coverage matrix](docs/coverage.md) for operation-specific requirements, supported options and known gaps.
+
+### Behavior to know
+
+- **Pagination is explicit.** Browse tools preserve Ghost's pagination metadata. Request subsequent pages using the controls available for that resource.
+- **Newsletter settings and delivery are separate.** Newsletter tools manage configuration; publishing or scheduling delivery uses `posts_edit`.
+- **Archive newsletters explicitly.** Use `newsletters_edit` with `status: "archived"`. Newsletter deletion is not exposed because the reference API has no matching endpoint.
+- **The summarization prompt prepares content for your MCP client.** It supplies the requested post's HTML within documented size limits; your client runs the summary.
 
 ## Usage
 
