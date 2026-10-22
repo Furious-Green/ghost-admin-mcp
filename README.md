@@ -6,14 +6,6 @@
 
 A Model Context Protocol (MCP) server for interacting with Ghost CMS through clients such as Claude. This public fork of [MFYDev/ghost-mcp](https://github.com/MFYDev/ghost-mcp) exposes all operations listed in [Ghost's documented integration endpoint table](https://docs.ghost.org/admin-api#endpoints), plus selected staff-management operations. Internal Admin UI endpoints and some advanced fields remain outside our scope; see the [coverage, version and credential matrix](docs/coverage.md) for the supported boundaries.
 
-The manifest is `ghost-admin-mcp`; `private: true` prevents accidental npm
-publication, not public repository access. MIT/upstream attribution and the
-`ghost-mcp` executable are retained. This fork's independent version line started
-at `0.1.0`; current version `0.2.0` introduces [specification-aligned tool errors](docs/tool-errors.md).
-MCP reports the same package version. This does not imply a published
-package or tagged release: use a reviewed full commit SHA. See [pinned source/runtime artifacts and
-rollback](docs/artifacts.md) and the [coverage/version/credential matrix](docs/coverage.md).
-
 ![demo](./assets/ghost-mcp-demo.gif)
 
 ## Features
