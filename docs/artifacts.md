@@ -107,8 +107,8 @@ source archive or consult this commit's public documentation for evidence.
    successful data; from0.2.0 known-tool argument/budget errors resolve as error
    results. Adapt parsers to `{data, meta?}` inside MCP text, retain delete text handling,
    reject unknown fields/selectors, and remove unsupported newsletter/offer/tier
-   delete and role-read names. Read the README's full migrations, not only this
-   checklist. No compatibility switch or implicit archival exists.
+   delete and role-read names. Read the full [migration guide](reference.md#migrating-from-the-original-implementation),
+   not only this checklist. No compatibility switch or implicit archival exists.
 3. Configure the MCP client to run `node` with the absolute new
    `build/server.js` path and its existing `GHOST_API_URL`,
    `GHOST_ADMIN_API_KEY`, `GHOST_API_VERSION` settings. Store real secrets in

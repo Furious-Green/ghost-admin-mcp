@@ -92,5 +92,5 @@ No universal integration/staff credential compatibility is claimed.
   [Migration and retained dispatcher rationale](tool-errors.md) distinguish the
   specification from SDK defaults, including the experimental-task limitation.
 
-See [README migrations](../README.md#migrating-from-the-original-implementation),
+See the [migration guide](reference.md#migrating-from-the-original-implementation),
 [artifact adoption/rollback](artifacts.md) and [dated dependency evidence](dependency-security.md).
